@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RedisMan.Library", "RedisMa
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RedisMan.Test", "RedisMan.Test\RedisMan.Test.csproj", "{C1557EA3-B3AB-4FBB-BBD0-746868E03485}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RedisMan.Terminal", "RedisMan.Terminal\RedisMan.Terminal.csproj", "{7E6C48CD-56D7-47FB-806E-3844D4860526}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{C1557EA3-B3AB-4FBB-BBD0-746868E03485}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C1557EA3-B3AB-4FBB-BBD0-746868E03485}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C1557EA3-B3AB-4FBB-BBD0-746868E03485}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7E6C48CD-56D7-47FB-806E-3844D4860526}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7E6C48CD-56D7-47FB-806E-3844D4860526}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7E6C48CD-56D7-47FB-806E-3844D4860526}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7E6C48CD-56D7-47FB-806E-3844D4860526}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
