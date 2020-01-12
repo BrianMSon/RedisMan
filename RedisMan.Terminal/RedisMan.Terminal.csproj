@@ -10,4 +10,8 @@
     <PackageReference Include="Mono.Terminal" Version="5.4.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\RedisMan.Library\RedisMan.Library.csproj" />
+  </ItemGroup>
+
 </Project>
