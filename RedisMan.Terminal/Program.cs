@@ -1,80 +1,44 @@
-﻿using Mono.Options;
-using Mono.Terminal;
-using RedisMan.Library.Protocol;
-using System;
-using System.Collections.Generic;
+﻿using System.CommandLine;
 
-namespace RedisMan.Terminal
+namespace RedisMan.Terminal;
+
+/// <summary>
+/// TODO:
+///     - [X] Implement System.CommandLine
+///     - [ ] CommandBuilder
+///     - [ ] Connection.cs
+///     - [ ] RESPParser.cs
+///     - [X] args[] parser, for connection and command to execute
+///     - [ ] Gui.cs Mode
+/// </summary>
+internal class Program
 {
-    class Program
+    static int Main(string[] args)
     {
-        //
-        static void Main(string[] args)
+       
+        var hostOption = new Option<string?>(name: "--host", description: "host/ip address to conect to.", getDefaultValue: () => "127.0.0.1");
+        hostOption.AddAlias("-h");
+        var portOption = new Option<int?>(name: "--port", description: "port to connect to.", getDefaultValue: () => 6379);
+        portOption.AddAlias("-p");
+        var commandOption = new Option<string?>("--command", description: "Command to Execute");
+        commandOption.AddAlias("-c");
+
+        var guiCommand = new Command("gui", description: "Terminal GUI")
         {
-            // these variables will be set when the command line is parsed
-            bool shouldShowHelp = false;
-            var connection = new ConnectionOptions()
-            {
-                Hostname = "127.0.0.1",
-                Port = 6379
-            };
-
-            var options = new OptionSet {
-                { "h|hostname=", "the name of someone to greet.", value => {
-                    if (value != null) connection.Hostname = value;
-                } },
-                { "p|port=", "the number of times to repeat the greeting.", (int port) => {
-                    if (port != 0) connection.Port = port;
-                }},
-                { "a|password=", "increase debug message verbosity", password => {
-                    if (!string.IsNullOrWhiteSpace(password)) connection.Password = password;
-                } },
-                { "help", "show this message and exit", h => shouldShowHelp = h != null },
-            };
-
-            List<string> extra;
-            try
-            {
-                extra = options.Parse(args);
-            }
-            catch (OptionException e)
-            {
-                Console.Write("RedisMan.Terminal.exe: ");
-                Console.WriteLine(e.Message);
-                Console.WriteLine("Try `RedisMan.Terminal.exe --help' for more information.");
-                return;
-            }
+            hostOption, portOption
+        };
 
 
-            if (shouldShowHelp)
-            {
-                ShowHelp(options);
-                return;
-            }
-
-            Repl(connection);
-        }
-
-        private static void Repl(ConnectionOptions connection)
+        var rootCmd = new RootCommand()
         {
-            LineEditor le = new LineEditor("redis");
-            string line;
-            // Prompts the user for input
-            while ((line = le.Edit($"{connection.Hostname}:{connection.Port}> ", "")) != null)
-            {
-                Console.WriteLine("Your Input: [{0}]", line) ;
-            }
-        }
+            hostOption, portOption, commandOption
+        };
+        rootCmd.AddCommand(guiCommand);
 
+        rootCmd.SetHandler(Repl.Run, hostOption, portOption, commandOption);
+        guiCommand.SetHandler(Gui.Run, hostOption, portOption);
 
-        private static void ShowHelp(OptionSet p)
-        {
-            Console.WriteLine("Usage: RedisMan.Terminal.exe [OPTIONS]+ message");
-            Console.WriteLine("Redis Client.");
-            Console.WriteLine();
-            Console.WriteLine("Options:");
-            p.WriteOptionDescriptions(Console.Out);
-        }
-
+        return rootCmd.Invoke(args);
     }
 }
+

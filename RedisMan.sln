@@ -1,15 +1,15 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.29613.14
+# Visual Studio Version 17
+VisualStudioVersion = 17.4.33110.190
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RedisMan", "RedisMan\RedisMan.csproj", "{00384710-E5A7-482D-905B-1657A67BC7E4}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RedisMan", "RedisMan\RedisMan.csproj", "{3BD70724-3A2F-4E5C-B395-35C0832DBF76}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RedisMan.Library", "RedisMan.Library\RedisMan.Library.csproj", "{CACD3120-947C-433C-95EE-C16649B93459}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RedisMan.Library", "RedisMan.Library\RedisMan.Library.csproj", "{0D38A183-B29E-4ACD-941A-8E1FD9BB8D66}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RedisMan.Test", "RedisMan.Test\RedisMan.Test.csproj", "{C1557EA3-B3AB-4FBB-BBD0-746868E03485}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RedisMan.Terminal", "RedisMan.Terminal\RedisMan.Terminal.csproj", "{50304785-4AE7-4DEC-91B1-D3E40366CCAD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RedisMan.Terminal", "RedisMan.Terminal\RedisMan.Terminal.csproj", "{7E6C48CD-56D7-47FB-806E-3844D4860526}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RedisMan.Test", "RedisMan.Test\RedisMan.Test.csproj", "{1E6505A2-E308-48B4-B062-542C8B60A576}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -17,27 +17,27 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{00384710-E5A7-482D-905B-1657A67BC7E4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{00384710-E5A7-482D-905B-1657A67BC7E4}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{00384710-E5A7-482D-905B-1657A67BC7E4}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{00384710-E5A7-482D-905B-1657A67BC7E4}.Release|Any CPU.Build.0 = Release|Any CPU
-		{CACD3120-947C-433C-95EE-C16649B93459}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{CACD3120-947C-433C-95EE-C16649B93459}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{CACD3120-947C-433C-95EE-C16649B93459}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{CACD3120-947C-433C-95EE-C16649B93459}.Release|Any CPU.Build.0 = Release|Any CPU
-		{C1557EA3-B3AB-4FBB-BBD0-746868E03485}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{C1557EA3-B3AB-4FBB-BBD0-746868E03485}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{C1557EA3-B3AB-4FBB-BBD0-746868E03485}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{C1557EA3-B3AB-4FBB-BBD0-746868E03485}.Release|Any CPU.Build.0 = Release|Any CPU
-		{7E6C48CD-56D7-47FB-806E-3844D4860526}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{7E6C48CD-56D7-47FB-806E-3844D4860526}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{7E6C48CD-56D7-47FB-806E-3844D4860526}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7E6C48CD-56D7-47FB-806E-3844D4860526}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3BD70724-3A2F-4E5C-B395-35C0832DBF76}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3BD70724-3A2F-4E5C-B395-35C0832DBF76}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3BD70724-3A2F-4E5C-B395-35C0832DBF76}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3BD70724-3A2F-4E5C-B395-35C0832DBF76}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0D38A183-B29E-4ACD-941A-8E1FD9BB8D66}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0D38A183-B29E-4ACD-941A-8E1FD9BB8D66}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0D38A183-B29E-4ACD-941A-8E1FD9BB8D66}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0D38A183-B29E-4ACD-941A-8E1FD9BB8D66}.Release|Any CPU.Build.0 = Release|Any CPU
+		{50304785-4AE7-4DEC-91B1-D3E40366CCAD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{50304785-4AE7-4DEC-91B1-D3E40366CCAD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{50304785-4AE7-4DEC-91B1-D3E40366CCAD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{50304785-4AE7-4DEC-91B1-D3E40366CCAD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1E6505A2-E308-48B4-B062-542C8B60A576}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1E6505A2-E308-48B4-B062-542C8B60A576}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1E6505A2-E308-48B4-B062-542C8B60A576}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1E6505A2-E308-48B4-B062-542C8B60A576}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {138AD4C0-43C1-461A-9CB1-B8C6116CAA41}
+		SolutionGuid = {6EC4296F-67F7-4060-BCB3-1F0AC9A1B79A}
 	EndGlobalSection
 EndGlobal
