@@ -58,6 +58,21 @@ public class Documentation
         return commands;
     }
 
+    public CommandDoc? Get(string command)
+    {
+        List<CommandDoc> commands = new();
+        foreach (var doc in Docs)
+        {
+            if (doc.Command.Equals(command, StringComparison.OrdinalIgnoreCase))
+            {
+                return doc;
+            }
+        }
+
+
+        return null;
+    }
+
     public List<CommandDoc> Search(Regex pattern)
     {
         List<CommandDoc> commands = new();

@@ -8,6 +8,9 @@ using PrettyPrompt.Documents;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using PrettyPrompt.Completion;
+using System.Runtime.CompilerServices;
+using System.CommandLine;
+using System.Collections.ObjectModel;
 
 namespace RedisMan.Terminal;
 /// <summary>
@@ -40,6 +43,29 @@ public static class Repl
             yield return (new(ConsoleModifiers.Control, ConsoleKey.F1), PressedF1);
         }
 
+
+        protected override async Task<(IReadOnlyList<OverloadItem>, int ArgumentIndex)> GetOverloadsAsync(string text, int caret, CancellationToken cancellationToken)
+        {
+            if (caret > 0)
+            {
+                var commandParts = text.Split(' ');
+                if (commandParts.Length > 1)
+                {
+                    var command = _documentation.Get(commandParts[0]);
+                    if (command != null)
+                    {
+                        var items = new List<OverloadItem>(1);
+                        var overloadItem = GetOverloadCommandDocumentation(command, text, caret);
+                        items.Add(overloadItem);
+                        return await Task.FromResult((items, 0));
+                    }
+                }
+            }
+
+            return EmptyOverload();
+        }
+
+
         protected override Task<IReadOnlyList<CompletionItem>> GetCompletionItemsAsync(string text, int caret, TextSpan spanToBeReplaced, CancellationToken cancellationToken)
         {
             // demo completion algorithm callback
@@ -52,11 +78,12 @@ public static class Repl
                     .Select(command =>
                     {
                         var displayText = command.Command;//new FormattedString(fruit.Name, new FormatSpan(0, fruit.Name.Length, fruit.Highlight));
-                        var description = command.Summary;
+                        var formattedDescription = GetFormattedCommandString(command);
                         return new CompletionItem(
                             replacementText: command.Command,
                             displayText: displayText,
-                            commitCharacterRules: new[] { new CharacterSetModificationRule(CharacterSetModificationKind.Add, new[] { ' ' }.ToImmutableArray()) }.ToImmutableArray()
+                            commitCharacterRules: new[] { new CharacterSetModificationRule(CharacterSetModificationKind.Add, new[] { ' ' }.ToImmutableArray()) }.ToImmutableArray(),
+                            getExtendedDescription: _ => Task.FromResult(formattedDescription)
                         );
                     })
                     .ToArray()
@@ -68,6 +95,35 @@ public static class Repl
             }
         }
 
+
+
+    }
+
+    static (IReadOnlyList<OverloadItem> Overloads, int ArgumentIndex) EmptyOverload() => (Array.Empty<OverloadItem>(), 0);
+
+    private static FormattedString GetFormattedCommandString(CommandDoc commandDoc)
+    {
+        var formatBuilder = new FormattedStringBuilder();
+        formatBuilder.Append(commandDoc.Command, new FormatSpan(0, commandDoc.Command.Length, AnsiColor.BrightYellow));
+        formatBuilder.Append(' ');
+        formatBuilder.Append(commandDoc.Arguments, new FormatSpan(0, commandDoc.Arguments.Length, AnsiColor.Yellow));
+        formatBuilder.Append('\n');
+        formatBuilder.Append(commandDoc.Summary, new FormatSpan(0, commandDoc.Summary.Length, AnsiColor.Blue));
+        return formatBuilder.ToFormattedString();
+    }
+
+    private static OverloadItem GetOverloadCommandDocumentation(CommandDoc commandDoc, string text, int caret)
+    {
+
+        var fmArguments = new FormattedStringBuilder();
+        fmArguments.Append(commandDoc.Command, new FormatSpan(0, commandDoc.Command.Length, AnsiColor.BrightYellow));
+        fmArguments.Append(' ');
+        fmArguments.Append(commandDoc.Arguments, new FormatSpan(0, commandDoc.Arguments.Length, AnsiColor.Yellow));
+
+        var fmSummary = new FormattedString(commandDoc.Summary, new FormatSpan(0, commandDoc.Summary.Length, AnsiColor.BrightBlue));
+        var fmSince = new FormattedString(commandDoc.Since, new FormatSpan(0, commandDoc.Since.Length, AnsiColor.Blue));
+
+        return new OverloadItem(fmArguments.ToFormattedString(), fmSummary, fmSince, Array.Empty<OverloadItem.Parameter>());
     }
 
 
@@ -122,11 +178,24 @@ public static class Repl
         string promptFormat = $"{_ip}:{_port}> ";
         int promptLength = promptFormat.Length;
 
+ 
+        var keyBindings = new KeyBindings(
+                    //commitCompletion: new(new(ConsoleKey.Enter), new(ConsoleKey.Tab)),
+                    //triggerCompletionList: new KeyPressPatterns(new(ConsoleModifiers.Control, ConsoleKey.Spacebar), new(ConsoleModifiers.Control, ConsoleKey.J),
+                    triggerOverloadList: new(new KeyPressPattern(' ')));
+
+        var promptConfiguration = new PromptConfiguration(
+                prompt: new FormattedString(promptFormat, new FormatSpan(0, promptLength - 2, AnsiColor.Red), new FormatSpan(promptLength - 2, 1, AnsiColor.Yellow)),
+                keyBindings: keyBindings);
+
+
+
+
         await using var prompt = new Prompt(
             callbacks: new RedisPromptCallBack(documentation),
-            configuration: new PromptConfiguration(
-                prompt: new FormattedString(promptFormat, new FormatSpan(0, promptLength-2, AnsiColor.Red), new FormatSpan(promptLength-2, 1, AnsiColor.Yellow))));
+            configuration:  promptConfiguration);
 
+        
 
 
         while (true)
