@@ -30,7 +30,48 @@ public class Documentation
                 DocumentationReaderContext.Default);
             if (docs != null) Docs = docs;
         }
+
+        Docs.Add(new CommandDoc()
+        {
+            Arguments = "",
+            Command = "EXIT",
+            Group = "application",
+            Since = "",
+            Summary = "Closess the application"
+
+        });
+
+        Docs.Add(new CommandDoc()
+        {
+            Arguments = "ip port",
+            Command = "CONNECT",
+            Group = "application",
+            Since = "",
+            Summary = "Connects to another server"
+
+        });
+
+        Docs.Add(new CommandDoc()
+        {
+            Arguments = "[command]",
+            Command = "HELP",
+            Group = "application",
+            Since = "",
+            Summary = "Prints Help Message"
+
+        });
+
+        Docs.Add(new CommandDoc()
+        {
+            Arguments = "",
+            Command = "CLEAR",
+            Group = "application",
+            Since = "",
+            Summary = "Clears Console"
+
+        });
     }
+
 
     public List<string> GetCommands(string pattern)
     {

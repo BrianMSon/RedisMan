@@ -1,4 +1,5 @@
-﻿using RedisMan.Library.Values;
+﻿using RedisMan.Library.Commands;
+using RedisMan.Library.Values;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -69,9 +70,9 @@ public class Connection : IDisposable
         TcpClient.Dispose();
     }
 
-    public void Send(string commands)
+    public void Send(ParsedCommand command)
     {
-        string[] commandParts = commands.Split(' ');
+        string[] commandParts = command.Text.Split(' ');
 
         //TODO: Create class to parse messages and get byte array
         var commandBuilder = new StringBuilder();

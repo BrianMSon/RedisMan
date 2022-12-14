@@ -11,6 +11,7 @@ using PrettyPrompt.Completion;
 using System.Runtime.CompilerServices;
 using System.CommandLine;
 using System.Collections.ObjectModel;
+using System;
 
 namespace RedisMan.Terminal;
 /// <summary>
@@ -18,8 +19,10 @@ namespace RedisMan.Terminal;
 ///     - [X] Try https://github.com/waf/PrettyPrompt
 ///     - [X] Prompt Mode
 ///     - [X] Implement autocomplete with documentation
-///     - [ ] Implement tooltip
-///     - [ ] Prompt support not connected state (local commands)
+///     - [X] Implement tooltip
+///     - [X] Prompt support not connected state (local commands)
+///     - [ ] support disconnects
+///     - [ ] reconnect
 ///     - [ ] Fire and Forget Mode
 /// </summary>
 
@@ -159,6 +162,54 @@ public static class Repl
         
     }
 
+    public static async Task PrintRedisValue(RedisValue value, string padding = "")
+    {
+        if (value is RedisArray array)
+        {
+            if (!string.IsNullOrEmpty(padding)) Console.WriteLine();
+            for (int i = 0; i < array.Values.Count; i++)
+            {
+                //Console.ForegroundColor = ConsoleColor.DarkGray;
+                Console.Write($"{padding}{i + 1})");
+                await PrintRedisValue(array.Values[i], "  ");
+                //Console.ForegroundColor = ConsoleColor.Blue;
+                //Console.WriteLine(array.Values[i].Value);
+            }
+        }
+        else
+        {
+            Console.WriteLine($"{padding}{value.Value}");
+        }
+    }
+
+    public static async Task PrintMessage(string message, FormatSpan[] formats)
+    {
+
+    }
+
+    private static void PrintHelp()
+    {
+        Console.WriteLine(
+$@"
+This is a Test Help Message
+
+
+Header
+===============
+Text with {Underline("Format")} at the end.
+
+Another Header
+=================
+Another Text
+"
+        );
+
+
+    }
+
+    private static string Underline(string word) =>
+        AnsiEscapeCodes.ToAnsiEscapeSequenceSlow(new ConsoleFormat(Underline: true)) + word + AnsiEscapeCodes.Reset;
+
 
     public static async Task Run(string? host, int? port, string? commands)
     {
@@ -167,7 +218,7 @@ public static class Repl
 
         string _ip = host ?? "127.0.0.1";
         int _port = port ?? 6379;
-        using var connection = Connection.Connect(_ip, _port);
+        Connection connection = null;
 
         // Enable history
         //ReadLine.HistoryEnabled = true;
@@ -195,42 +246,65 @@ public static class Repl
             callbacks: new RedisPromptCallBack(documentation),
             configuration:  promptConfiguration);
 
-        
+        var commandParser = new CommandParser(documentation);
 
+        //connect by grabbing last connection configuration
+        //if (connection == null) Connection.Connect(_ip, _port);
 
         while (true)
         {
             //string input = ReadLine.Read($"{_ip}:{_port}> ");
             //"{_ip}:{_port}> "
             var response = await prompt.ReadLineAsync();
-
+            
             // Send message.
             if (response.IsSuccess)
             {
-                string input = response.Text;
-                if (input == "q") break;
-                connection.Send(input);
+                var command = commandParser.Parse(response.Text);
+                string input = command.Text;
 
-
-                RedisValue value = connection.Receive();
-
-                if (value is RedisArray array)
+                if (connection != null && connection.IsConnected)
                 {
-                    for (int i = 0; i < array.Values.Count; i++)
+                    //do not send local commands to the server
+                    if (command.Documentation == null || command.Documentation.Group != "application")
+                        connection.Send(command);
+
+
+                    RedisValue value = connection.Receive();
+                    await PrintRedisValue(value);
+                }
+
+                // evaluate built in commands
+                if (command.Documentation != null && command.Documentation.Group == "application")
+                {
+                    var doc = command.Documentation;
+                    if (doc.Command == "EXIT") { break; }
+                    if (doc.Command == "CLEAR") { Console.Clear(); continue; }
+                    if (doc.Command == "CONNECT") { 
+                        if (command.Args.Length > 1)
+                        {
+                            string newHost = command.Args[0];
+                            string sPort = command.Args[1];
+                            Console.WriteLine($"Connecting to {Underline(newHost)}:{Underline(sPort)}");
+                            if (int.TryParse(sPort, out int intPort))
+                            {
+                                connection = Connection.Connect(newHost, intPort);
+                            }
+                            
+                        }
+                    }
+                    if (new[] { "HELP", "?" }.Contains(doc.Command))
                     {
-                        //Console.ForegroundColor = ConsoleColor.DarkGray;
-                        Console.WriteLine($"{i + 1}) {array.Values[i].Value}");
-                        //Console.ForegroundColor = ConsoleColor.Blue;
-                        //Console.WriteLine(array.Values[i].Value);
+                        PrintHelp();
+                        continue;
                     }
                 }
-                else
-                {
-                    Console.WriteLine(value.Value);
-                }
+
+                
+                
             }
         }
 
-        connection.Close();
+        if (connection != null) connection.Close();
     }
 }
