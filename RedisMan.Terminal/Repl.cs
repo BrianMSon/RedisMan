@@ -12,6 +12,8 @@ using System.Runtime.CompilerServices;
 using System.CommandLine;
 using System.Collections.ObjectModel;
 using System;
+using System.ComponentModel.DataAnnotations;
+using System.Xml;
 
 namespace RedisMan.Terminal;
 /// <summary>
@@ -21,9 +23,17 @@ namespace RedisMan.Terminal;
 ///     - [X] Implement autocomplete with documentation
 ///     - [X] Implement tooltip
 ///     - [X] Prompt support not connected state (local commands)
+///     - [ ] Span Array position numbers
 ///     - [ ] support disconnects
 ///     - [ ] reconnect
 ///     - [ ] Fire and Forget Mode
+///     - [ ] Parse INFO on connect
+///     - [ ] Display databases and number of keys
+///     - [ ] prevent sending dangerous commands
+///     - [ ] local command to autolist all keys (safely)
+///     - [ ] local command to save command output to file
+///     - [ ] pipe commands to shell
+///     - [ ] View command to automatically view data regardless of type
 /// </summary>
 
 
@@ -178,13 +188,57 @@ public static class Repl
         }
         else
         {
-            Console.WriteLine($"{padding}{value.Value}");
+            var consoleFormat = new ConsoleFormat();
+            string outputText = "";
+            switch (value.Type)
+            {
+                case Library.Values.ValueType.String:
+                    outputText = $"{padding}{value.Value}";
+                    consoleFormat = new ConsoleFormat(Foreground: AnsiColor.BrightBlue);
+                    break;
+                case Library.Values.ValueType.Null:
+                    outputText = $"{padding}null";
+                    consoleFormat = new ConsoleFormat(Foreground: AnsiColor.BrightBlack);
+                    break;
+                case Library.Values.ValueType.BulkString:
+                    if (value.Value is null)
+                    {
+                        outputText = $"{padding}(nil)";
+                        consoleFormat = new ConsoleFormat(Foreground: AnsiColor.BrightBlack);
+                    }
+                    else
+                    {
+                        outputText = $"{padding}{value.Value}";
+                        consoleFormat = new ConsoleFormat(Foreground: AnsiColor.BrightBlue);
+                    }
+                    break;
+                case Library.Values.ValueType.Integer:
+                    outputText = $"{padding}{value.Value}";
+                    consoleFormat = new ConsoleFormat(Foreground: AnsiColor.Magenta);
+                    break;
+                case Library.Values.ValueType.Error:
+                    outputText = $"{padding}{value.Value}";
+                    consoleFormat = new ConsoleFormat(Foreground: AnsiColor.Red, Bold: true);
+                    break;
+            }
+
+            Console.WriteLine(AnsiEscapeCodes.Reset + AnsiEscapeCodes.ToAnsiEscapeSequenceSlow(consoleFormat) + outputText + AnsiEscapeCodes.Reset);
+
         }
     }
 
     public static async Task PrintMessage(string message, FormatSpan[] formats)
     {
 
+    }
+
+    private static void PrintError(Exception ex)
+    {
+        
+        var format = new ConsoleFormat(Bold: true, Foreground: AnsiColor.BrightRed);
+        Console.Error.Write(AnsiEscapeCodes.Reset);
+        Console.Error.Write(AnsiEscapeCodes.ToAnsiEscapeSequenceSlow(format) + "Error: " + AnsiEscapeCodes.Reset);
+        Console.Error.WriteLine(AnsiEscapeCodes.ToAnsiEscapeSequenceSlow(new ConsoleFormat(Foreground: AnsiColor.Red)) + ex.Message + AnsiEscapeCodes.Reset);
     }
 
     private static void PrintHelp()
@@ -225,7 +279,6 @@ Another Text
         //Configure UI and ReadLine
         //ReadLine.AutoCompletionHandler = new UI.AutoCompletionHandler(documentation);
 
-        var defaultColor = Console.ForegroundColor;
         string promptFormat = $"{_ip}:{_port}> ";
         int promptLength = promptFormat.Length;
 
@@ -249,18 +302,22 @@ Another Text
         var commandParser = new CommandParser(documentation);
 
         //connect by grabbing last connection configuration
-        //if (connection == null) Connection.Connect(_ip, _port);
+        if (connection == null) connection = Connection.Connect(_ip, _port);
 
         while (true)
         {
             //string input = ReadLine.Read($"{_ip}:{_port}> ");
             //"{_ip}:{_port}> "
             var response = await prompt.ReadLineAsync();
-            
             // Send message.
             if (response.IsSuccess)
             {
                 var command = commandParser.Parse(response.Text);
+                if (command == null)
+                {
+                    Console.WriteLine($"Error Parsing {Underline(response.Text)}");
+                    continue;
+                }
                 string input = command.Text;
 
                 if (connection != null && connection.IsConnected)
@@ -272,13 +329,18 @@ Another Text
 
                     RedisValue value = connection.Receive();
                     await PrintRedisValue(value);
+                } 
+                else
+                {
+                    Console.WriteLine($"Disconnected, try connecting using {Underline("CONNECT")}");
                 }
+
 
                 // evaluate built in commands
                 if (command.Documentation != null && command.Documentation.Group == "application")
                 {
                     var doc = command.Documentation;
-                    if (doc.Command == "EXIT") { break; }
+                    if (doc.Command == "EXIT") { Environment.Exit(0); }
                     if (doc.Command == "CLEAR") { Console.Clear(); continue; }
                     if (doc.Command == "CONNECT") { 
                         if (command.Args.Length > 1)
@@ -288,7 +350,14 @@ Another Text
                             Console.WriteLine($"Connecting to {Underline(newHost)}:{Underline(sPort)}");
                             if (int.TryParse(sPort, out int intPort))
                             {
-                                connection = Connection.Connect(newHost, intPort);
+                                try
+                                {
+                                    connection = Connection.Connect(newHost, intPort);
+                                } 
+                                catch (Exception ex)
+                                {
+                                    PrintError(ex);
+                                }
                             }
                             
                         }
@@ -300,8 +369,7 @@ Another Text
                     }
                 }
 
-                
-                
+
             }
         }
 
