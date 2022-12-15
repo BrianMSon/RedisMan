@@ -34,6 +34,7 @@ namespace RedisMan.Terminal;
 ///     - [ ] local command to save command output to file
 ///     - [ ] pipe commands to shell
 ///     - [ ] View command to automatically view data regardless of type
+///     - [X] Test Remote git repository
 /// </summary>
 
 
