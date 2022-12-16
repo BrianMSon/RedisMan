@@ -14,6 +14,7 @@ using System.Collections.ObjectModel;
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.Xml;
+using System.Drawing;
 
 namespace RedisMan.Terminal;
 /// <summary>
@@ -24,10 +25,10 @@ namespace RedisMan.Terminal;
 ///     - [X] Implement tooltip
 ///     - [X] Prompt support not connected state (local commands)
 ///     - [ ] Span Array position numbers
-///     - [ ] support disconnects
-///     - [ ] reconnect
-///     - [ ] Fire and Forget Mode
-///     - [ ] Parse INFO on connect
+///     - [X] support disconnects
+///     - [X] reconnect
+///     - [X] Fire and Forget Mode
+///     - [X] Parse INFO on connect
 ///     - [ ] Display databases and number of keys
 ///     - [ ] prevent sending dangerous commands
 ///     - [ ] local command to autolist all keys (safely)
@@ -173,7 +174,7 @@ public static class Repl
         
     }
 
-    public static async Task PrintRedisValue(RedisValue value, string padding = "")
+    public static async Task PrintRedisValue(RedisValue value, string padding = "", bool color = true)
     {
         if (value is RedisArray array)
         {
@@ -222,15 +223,29 @@ public static class Repl
                     consoleFormat = new ConsoleFormat(Foreground: AnsiColor.Red, Bold: true);
                     break;
             }
-
-            Console.WriteLine(AnsiEscapeCodes.Reset + AnsiEscapeCodes.ToAnsiEscapeSequenceSlow(consoleFormat) + outputText + AnsiEscapeCodes.Reset);
-
+            if (color)
+                Console.WriteLine(AnsiEscapeCodes.Reset + AnsiEscapeCodes.ToAnsiEscapeSequenceSlow(consoleFormat) + outputText + AnsiEscapeCodes.Reset);
+            else
+                Console.WriteLine(outputText);
         }
     }
 
     public static async Task PrintMessage(string message, FormatSpan[] formats)
     {
 
+    }
+
+    public static void PrintConnectedInfo(Connection connection)
+    {
+        var serverInfo = connection.ServerInfo;
+        /*foreach (var section in serverInfo.Keys)
+        {
+            Console.WriteLine($"{WithFormat(section, new ConsoleFormat(Bold: true, Foreground: AnsiColor.BrightBlue))}");
+            foreach (var entry in serverInfo[section])
+            {
+                Console.WriteLine($"{Bold(entry.Key)}={entry.Value}");
+            }
+        }*/
     }
 
     private static void PrintError(Exception ex)
@@ -264,6 +279,15 @@ Another Text
 
     private static string Underline(string word) =>
         AnsiEscapeCodes.ToAnsiEscapeSequenceSlow(new ConsoleFormat(Underline: true)) + word + AnsiEscapeCodes.Reset;
+
+    private static string Bold(string word) =>
+        AnsiEscapeCodes.ToAnsiEscapeSequenceSlow(new ConsoleFormat(Bold: true)) + word + AnsiEscapeCodes.Reset;
+
+    private static string WithColor(string word, AnsiColor color) =>
+        AnsiEscapeCodes.ToAnsiEscapeSequenceSlow(new ConsoleFormat(Foreground: color)) + word + AnsiEscapeCodes.Reset;
+
+    private static string WithFormat(string word, in ConsoleFormat format) =>
+        AnsiEscapeCodes.ToAnsiEscapeSequenceSlow(format) + word + AnsiEscapeCodes.Reset;
 
 
     public static async Task Run(string? host, int? port, string? commands)
@@ -303,7 +327,35 @@ Another Text
         var commandParser = new CommandParser(documentation);
 
         //connect by grabbing last connection configuration
-        if (connection == null) connection = Connection.Connect(_ip, _port);
+        if (connection == null)
+        {
+            try
+            {
+                connection = Connection.Connect(_ip, _port);
+                PrintConnectedInfo(connection);
+            }
+            catch (Exception ex)
+            {
+                PrintError(ex);
+            }
+            
+        }
+
+
+        ///fire and forget implementation, only happens when commands are sent through args[]
+        if (connection != null && !string.IsNullOrWhiteSpace(commands))
+        {
+            //commands
+            var command = commandParser.Parse(commands);
+            if (command != null)
+            {
+                connection.Send(command);
+                RedisValue value = connection.Receive();
+                await PrintRedisValue(value);
+                Environment.Exit(0);
+            }
+        }
+
 
         while (true)
         {
@@ -311,7 +363,7 @@ Another Text
             //"{_ip}:{_port}> "
             var response = await prompt.ReadLineAsync();
             // Send message.
-            if (response.IsSuccess)
+            if (response.IsSuccess && !string.IsNullOrWhiteSpace(response.Text))
             {
                 var command = commandParser.Parse(response.Text);
                 if (command == null)
@@ -325,11 +377,13 @@ Another Text
                 {
                     //do not send local commands to the server
                     if (command.Documentation == null || command.Documentation.Group != "application")
+                    {
                         connection.Send(command);
 
 
-                    RedisValue value = connection.Receive();
-                    await PrintRedisValue(value);
+                        RedisValue value = connection.Receive();
+                        await PrintRedisValue(value);
+                    }
                 } 
                 else
                 {
@@ -354,6 +408,7 @@ Another Text
                                 try
                                 {
                                     connection = Connection.Connect(newHost, intPort);
+                                    PrintConnectedInfo(connection);
                                 } 
                                 catch (Exception ex)
                                 {

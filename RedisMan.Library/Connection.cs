@@ -1,26 +1,25 @@
 ﻿using RedisMan.Library.Commands;
+using RedisMan.Library.Models;
 using RedisMan.Library.Values;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.IO;
-using System.Linq;
+
 using System.Net.Sockets;
 using System.Text;
 
-
 namespace RedisMan.Library;
+
 
 public class Connection : IDisposable
 {
+    
     public string Host { get; set; }
     public int Port { get; set; }
     public int ReceiveTimeout { get; set; } = 1000;
     private TcpClient TcpClient { get; set; }
     public NetworkStream Stream { get; set; }
     public RESPParser Parser { get; set; }
+    public ServerInfo ServerInfo { get; set; }
 
-    public bool IsConnected { get => TcpClient.Connected; }
+    public bool IsConnected { get => Stream.Socket.Connected; }
 
 
     //connectionstring= redis://user:password@host:port/dbnum:
@@ -60,6 +59,13 @@ public class Connection : IDisposable
         };
 
         connection.TryConnecting();
+
+        ///After connecting, grab server information if available
+        if (connection.IsConnected)
+        {
+            connection.GetServerInfo();
+        }
+
         return connection;
     }
 
@@ -72,7 +78,12 @@ public class Connection : IDisposable
 
     public void Send(ParsedCommand command)
     {
-        string[] commandParts = command.Text.Split(' ');
+        Send(command.Text);
+    }
+
+    public void Send(string command)
+    {
+        string[] commandParts = command.Split(' ');
 
         //TODO: Create class to parse messages and get byte array
         var commandBuilder = new StringBuilder();
@@ -91,9 +102,19 @@ public class Connection : IDisposable
     public RedisValue Receive()
     {
         //wait until data is available here
-        while (!Stream.DataAvailable)
+        while (!Stream.DataAvailable && Stream.Socket.Connected)
             Thread.Sleep(100);
 
         return Parser.Parse();
+    }
+
+    private void GetServerInfo()
+    {
+        Send("INFO");
+        RedisValue value = Receive();
+        if (value != null && value is RedisBulkString bulkString)
+        {
+            ServerInfo = CommandParser.ParseInfoOutput(bulkString);
+        }
     }
 }
