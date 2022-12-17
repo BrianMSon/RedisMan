@@ -9,6 +9,7 @@ namespace RedisMan.Library.Values;
 
 public interface RedisValue
 {
+    public static RedisValue Null = new RedisNull();
     public ValueType Type { get; }
     public string? Value { get; set; }
     public static ValueType GetValueType(char firstByte)

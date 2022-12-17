@@ -147,4 +147,45 @@ public class Connection : IDisposable
         }
         
     }
+
+
+    /// <summary>
+    /// Gets a Key value regardless of type
+    /// </summary>
+    /// <param name="command"></param>
+    /// <returns></returns>
+    /// <exception cref="NotImplementedException"></exception>
+    public RedisValue GetKeyValue(ParsedCommand command)
+    {
+        string key = command.Args[0];
+        Send($"TYPE {key}");
+        RedisValue value = Receive(); //keyName
+        if (value is RedisString stringValue)
+        {
+            string keyType = stringValue.Value ?? "";
+            switch (keyType)
+            {
+                case "string":
+                    Send($"GET {key}");
+                    return Receive();
+                case "list":
+                    Send($"LRANGE {key} 0 -1");
+                    return Receive();
+                case "set":
+                    Send($"SMEMBERS {key}");
+                    return Receive();
+                case "zset":
+                    Send($"ZRANGE {key} 0 -1");
+                    return Receive();
+                case "hash":
+                    Send($"HGETALL {key}");
+                    return Receive();
+                case "stream":
+                    Send($"XRANGE {key} - +");
+                    return Receive();
+            }
+        }
+        return RedisValue.Null;
+        //types that can be returned
+    }
 }

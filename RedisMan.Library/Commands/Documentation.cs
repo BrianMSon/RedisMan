@@ -88,6 +88,16 @@ public class Documentation
             Summary = "Safe version of KEYS, client implementation."
 
         });
+
+        Docs.Add(new CommandDoc()
+        {
+            Arguments = "key",
+            Command = "VIEW",
+            Group = "application",
+            Since = "",
+            Summary = "View key value regardless of type."
+
+        });
     }
 
 

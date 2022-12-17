@@ -34,114 +34,23 @@ namespace RedisMan.Terminal;
 ///     - [X] Display databases and number of keys
 ///     - [X] Prevent sending dangerous commands
 ///     - [X] Local command to autolist all keys (safely)
+///     - [X] View command to automatically view data regardless of type\
+///     - [ ] implement safe VIEW command
+///     - [ ] CHECK DB2 key opsviewer:tools:phlytest:PHLY18-00126 , why so many nulls
 ///     - [ ] local command to save command output to file
 ///     - [ ] pipe commands to shell
-///     - [ ] View command to automatically view data regardless of type
 ///     - [X] Test Remote git repository
 /// </summary>
 
 
 
-public static class Repl
+public static partial class Repl
 {
-    public class RedisPromptCallBack : PromptCallbacks
-    {
-        Documentation _documentation;
-        public RedisPromptCallBack(Documentation documentation)
-        {
-            _documentation = documentation;
-        }
-
-        protected override IEnumerable<(KeyPressPattern Pattern, KeyPressCallbackAsync Callback)> GetKeyPressCallbacks()
-        {
-            // registers functions to be called when the user presses a key. The text
-            // currently typed into the prompt, along with the caret position within
-            // that text are provided as callback parameters.
-            yield return (new(ConsoleModifiers.Control, ConsoleKey.F1), PressedF1);
-        }
-
-
-        protected override async Task<(IReadOnlyList<OverloadItem>, int ArgumentIndex)> GetOverloadsAsync(string text, int caret, CancellationToken cancellationToken)
-        {
-            if (caret > 0)
-            {
-                var commandParts = text.Split(' ');
-                if (commandParts.Length > 1)
-                {
-                    var command = _documentation.Get(commandParts[0]);
-                    if (command != null)
-                    {
-                        var items = new List<OverloadItem>(1);
-                        var overloadItem = GetOverloadCommandDocumentation(command, text, caret);
-                        items.Add(overloadItem);
-                        return await Task.FromResult((items, 0));
-                    }
-                }
-            }
-
-            return EmptyOverload();
-        }
-
-
-        protected override Task<IReadOnlyList<CompletionItem>> GetCompletionItemsAsync(string text, int caret, TextSpan spanToBeReplaced, CancellationToken cancellationToken)
-        {
-            // demo completion algorithm callback
-            // populate completions and documentation for autocompletion window
-            var typedWord = text.AsSpan(spanToBeReplaced.Start, spanToBeReplaced.Length).ToString();
-            if (spanToBeReplaced.Start == 0)
-            {
-                return Task.FromResult<IReadOnlyList<CompletionItem>>(
-                    _documentation.Docs
-                    .Select(command =>
-                    {
-                        var displayText = command.Command;//new FormattedString(fruit.Name, new FormatSpan(0, fruit.Name.Length, fruit.Highlight));
-                        var formattedDescription = GetFormattedCommandString(command);
-                        return new CompletionItem(
-                            replacementText: command.Command,
-                            displayText: displayText,
-                            commitCharacterRules: new[] { new CharacterSetModificationRule(CharacterSetModificationKind.Add, new[] { ' ' }.ToImmutableArray()) }.ToImmutableArray(),
-                            getExtendedDescription: _ => Task.FromResult(formattedDescription)
-                        );
-                    })
-                    .ToArray()
-                );
-            }
-            else
-            {
-                return Task.FromResult<IReadOnlyList<CompletionItem>>(new CompletionItem[] { });
-            }
-        }
-
-
-
-    }
+    
 
     static (IReadOnlyList<OverloadItem> Overloads, int ArgumentIndex) EmptyOverload() => (Array.Empty<OverloadItem>(), 0);
 
-    private static FormattedString GetFormattedCommandString(CommandDoc commandDoc)
-    {
-        var formatBuilder = new FormattedStringBuilder();
-        formatBuilder.Append(commandDoc.Command, new FormatSpan(0, commandDoc.Command.Length, AnsiColor.BrightYellow));
-        formatBuilder.Append(' ');
-        formatBuilder.Append(commandDoc.Arguments, new FormatSpan(0, commandDoc.Arguments.Length, AnsiColor.Yellow));
-        formatBuilder.Append('\n');
-        formatBuilder.Append(commandDoc.Summary, new FormatSpan(0, commandDoc.Summary.Length, AnsiColor.Blue));
-        return formatBuilder.ToFormattedString();
-    }
 
-    private static OverloadItem GetOverloadCommandDocumentation(CommandDoc commandDoc, string text, int caret)
-    {
-
-        var fmArguments = new FormattedStringBuilder();
-        fmArguments.Append(commandDoc.Command, new FormatSpan(0, commandDoc.Command.Length, AnsiColor.BrightYellow));
-        fmArguments.Append(' ');
-        fmArguments.Append(commandDoc.Arguments, new FormatSpan(0, commandDoc.Arguments.Length, AnsiColor.Yellow));
-
-        var fmSummary = new FormattedString(commandDoc.Summary, new FormatSpan(0, commandDoc.Summary.Length, AnsiColor.BrightBlue));
-        var fmSince = new FormattedString(commandDoc.Since, new FormatSpan(0, commandDoc.Since.Length, AnsiColor.Blue));
-
-        return new OverloadItem(fmArguments.ToFormattedString(), fmSummary, fmSince, Array.Empty<OverloadItem.Parameter>());
-    }
 
 
     private static Task<KeyPressCallbackResult?> PressedF1(string text, int caret, CancellationToken cancellationToken)
@@ -172,8 +81,6 @@ public static class Repl
 
             return wordAtCaret;
         }
-
-        
     }
 
     public static async Task PrintRedisValues(IEnumerable<RedisValue> values)
@@ -184,6 +91,20 @@ public static class Repl
             i++;
             Console.Write($"{i + 1})");
             await PrintRedisValue(value, "  ");
+            if (i % 100 == 0)
+            {
+                var sb = new StringBuilder();
+                sb.Append($"Continue Listing?");
+                sb.Append($" {WithColor("(Y/N)", AnsiColor.Yellow)} ");
+                sb.Append(AnsiEscapeCodes.Reset);
+                Console.Write(sb.ToString());
+                var consoleKey = Console.ReadKey();
+                if (consoleKey.KeyChar != 'Y' && consoleKey.KeyChar != 'y')
+                {
+                    break;
+                }
+                Console.WriteLine();
+            }
         }
     }
 
@@ -240,63 +161,11 @@ public static class Repl
         }
     }
 
-    private static async Task PrintMessage(string message, FormatSpan[] formats)
-    {
-
-    }
-
-    private static void PrintConnectedInfo(Connection connection)
-    {
-        var serverInfo = connection.ServerInfo;
-        if (serverInfo != null && (serverInfo.KeySpace?.Any() ?? false))
-        {
-            Console.WriteLine($"Connected to Redis {Bold(serverInfo.RedisVersion.ToString())} {Bold(serverInfo.RedisMode)}");
-            Console.WriteLine($"Memory: {Underline(serverInfo.UsedMemoryHuman)} / {Underline(serverInfo.TotalSystemMemoryHuman)}");
-            Console.WriteLine($"Available Databases:");
-            foreach (var ks in serverInfo.KeySpace)
-            {
-                Console.WriteLine($" {WithColor(ks.DBName, AnsiColor.White)} ({WithColor(ks.Keys.ToString(), AnsiColor.White)} Total Keys)");
-            }
-            
-        }
-        /*foreach (var section in serverInfo.Keys)
-        {
-            Console.WriteLine($"{WithFormat(section, new ConsoleFormat(Bold: true, Foreground: AnsiColor.BrightBlue))}");
-            foreach (var entry in serverInfo[section])
-            {
-                Console.WriteLine($"{Bold(entry.Key)}={entry.Value}");
-            }
-        }*/
-    }
-
-    private static void PrintError(Exception ex)
-    {
-        
-        var format = new ConsoleFormat(Bold: true, Foreground: AnsiColor.BrightRed);
-        Console.Error.Write(AnsiEscapeCodes.Reset);
-        Console.Error.Write(AnsiEscapeCodes.ToAnsiEscapeSequenceSlow(format) + "Error: " + AnsiEscapeCodes.Reset);
-        Console.Error.WriteLine(AnsiEscapeCodes.ToAnsiEscapeSequenceSlow(new ConsoleFormat(Foreground: AnsiColor.Red)) + ex.Message + AnsiEscapeCodes.Reset);
-    }
-
-    private static void PrintHelp()
-    {
-        Console.WriteLine(
-$@"
-This is a Test Help Message
+    
 
 
-Header
-===============
-Text with {Underline("Format")} at the end.
-
-Another Header
-=================
-Another Text
-"
-        );
 
 
-    }
 
     private static string Underline(string word) =>
         AnsiEscapeCodes.ToAnsiEscapeSequenceSlow(new ConsoleFormat(Underline: true)) + word + AnsiEscapeCodes.Reset;
@@ -370,6 +239,7 @@ Another Text
                 connection.Send(command);
                 RedisValue value = connection.Receive();
                 await PrintRedisValue(value);
+                connection?.Close();
                 Environment.Exit(0);
             }
         }
@@ -422,7 +292,10 @@ Another Text
                 if (command.Documentation != null && command.Documentation.Group == "application")
                 {
                     var doc = command.Documentation;
-                    if (doc.Command == "EXIT") { Environment.Exit(0); }
+                    if (doc.Command == "EXIT") {
+                        connection?.Close();
+                        Environment.Exit(0); 
+                    }
                     if (doc.Command == "CLEAR") { Console.Clear(); continue; }
                     if (doc.Command == "CONNECT") { 
                         if (command.Args.Length > 1)
@@ -448,17 +321,26 @@ Another Text
                         }
                     }
 
-                    if (command.Name == "SAFEKEYS" && connection != null)
-                    {
-                        string pattern = command.Args.Length > 0 ? command.Args[0] : "";
-                        var keys = connection.SafeKeys(pattern);
-                        await PrintRedisValues(keys);
-                    }
-
                     if (new[] { "HELP", "?" }.Contains(doc.Command))
                     {
                         PrintHelp();
                         continue;
+                    }
+
+                    if (connection != null)
+                    {
+                        if (command.Name == "SAFEKEYS")
+                        {
+                            string pattern = command.Args.Length > 0 ? command.Args[0] : "";
+                            var keys = connection.SafeKeys(pattern);
+                            await PrintRedisValues(keys);
+                        }
+
+                        if (command.Name == "VIEW" && command.Args.Length > 0)
+                        {
+                            var value = connection.GetKeyValue(command);
+                            await PrintRedisValue(value);
+                        }
                     }
                 }
 
@@ -466,7 +348,6 @@ Another Text
             }
         }
 
-        if (connection != null) connection.Close();
     }
 
     private static bool AskforDangerousExecution(ParsedCommand command)
