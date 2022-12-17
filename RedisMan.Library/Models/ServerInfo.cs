@@ -23,7 +23,7 @@ public class ServerInfo
     public bool IsAvaible { get; set; } = false;
     //Redis Information
     [ServerInfoName("redis_version")]
-    public int RedisVersion { get; set; }
+    public string RedisVersion { get; set; }
     [ServerInfoName("redis_mode")]
     public string RedisMode { get; set; } = "";
     [ServerInfoName("process_id")]

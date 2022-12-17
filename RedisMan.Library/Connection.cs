@@ -117,4 +117,34 @@ public class Connection : IDisposable
             ServerInfo = CommandParser.ParseInfoOutput(bulkString);
         }
     }
+
+    public IEnumerable<RedisValue> SafeKeys(string pattern)
+    {
+        string cursor = "0";
+        bool stillReading = true;
+        while (stillReading)
+        {
+            Send($"SCAN {cursor}{(!string.IsNullOrWhiteSpace(pattern) ? $" MATCH {pattern}" : "")}");
+            RedisValue value = Receive();
+
+            if (value is RedisArray array)
+            {
+                if (array.Length > 1)
+                {
+                    cursor = array.Values[0].Value;
+                    if (array.Values[1] is RedisArray sub)
+                    {
+                        foreach (var key in sub.Values)
+                        {
+                            yield return key;
+                        }
+                    } else stillReading= false;
+                }
+                else stillReading = false;
+            }
+
+            if (cursor == "0") stillReading = false;
+        }
+        
+    }
 }

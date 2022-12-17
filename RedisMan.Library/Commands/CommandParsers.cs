@@ -21,7 +21,9 @@ public class ParsedCommand
         set {
             _text = value;
             _bytes = System.Text.Encoding.UTF8.GetBytes(Text);
-            _args = _text.Trim().Split(' ')[1..];
+            string[] parts = _text.Trim().Split(' ');
+            Name = parts[0];
+            _args = parts[1..];
         }
     }
     public CommandDoc? Documentation {
@@ -39,6 +41,7 @@ public class ParsedCommand
             }
         } 
     }
+    public string Name { get; set; }
     public byte[]? CommandBytes { get => _bytes; }
     public string[] Args { get => _args;  }
 }
@@ -97,11 +100,6 @@ public class CommandParser
                 var attrFirst = attr.First() as ServerInfoNameAttribute;
                 properties.Add(attrFirst.Name, p);
             }
-        }
-
-        foreach (var prop in properties)
-        {
-            Console.WriteLine($"{prop.Key}={prop.Value.PropertyType}");
         }
 
         if (!string.IsNullOrWhiteSpace(info.Value))

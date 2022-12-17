@@ -6,10 +6,18 @@ using System.Text.Json.Serialization;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Text.RegularExpressions;
+using System.Diagnostics;
+using System.Xml.Linq;
 
 namespace RedisMan.Library.Commands;
 public class Documentation
 {
+    private string[] DangerousCommands = new string[]
+    {
+        "FLUSHDB", "FLUSHALL", "KEYS", "PEXPIRE", "DEL", "CONFIG", 
+        "SHUTDOWN", "BGREWRITEAOF", "BGSAVE", "SAVE", "SPOP", "SREM", "RENAME", "DEBUG"
+    };
+
     public List<CommandDoc> Docs { get; set; }
 
 
@@ -68,6 +76,16 @@ public class Documentation
             Group = "application",
             Since = "",
             Summary = "Clears Console"
+
+        });
+
+        Docs.Add(new CommandDoc()
+        {
+            Arguments = "[pattern]",
+            Command = "SAFEKEYS",
+            Group = "application",
+            Since = "",
+            Summary = "Safe version of KEYS, client implementation."
 
         });
     }
@@ -131,6 +149,15 @@ public class Documentation
         return commands;
     }
 
+    public bool IsCommandDangerous(string command)
+    {
+        if (DangerousCommands.Contains(command.ToUpperInvariant()))
+        {
+            return true;
+        }
+
+        return false;
+    }
     private void Parse(string filename)
     {
         

@@ -15,6 +15,8 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using System.Xml;
 using System.Drawing;
+using System.Text;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace RedisMan.Terminal;
 /// <summary>
@@ -29,9 +31,9 @@ namespace RedisMan.Terminal;
 ///     - [X] reconnect
 ///     - [X] Fire and Forget Mode
 ///     - [X] Parse INFO on connect
-///     - [ ] Display databases and number of keys
-///     - [ ] prevent sending dangerous commands
-///     - [ ] local command to autolist all keys (safely)
+///     - [X] Display databases and number of keys
+///     - [X] Prevent sending dangerous commands
+///     - [X] Local command to autolist all keys (safely)
 ///     - [ ] local command to save command output to file
 ///     - [ ] pipe commands to shell
 ///     - [ ] View command to automatically view data regardless of type
@@ -174,6 +176,17 @@ public static class Repl
         
     }
 
+    public static async Task PrintRedisValues(IEnumerable<RedisValue> values)
+    {
+        int i = 0;
+        foreach (var value in values)
+        {
+            i++;
+            Console.Write($"{i + 1})");
+            await PrintRedisValue(value, "  ");
+        }
+    }
+
     public static async Task PrintRedisValue(RedisValue value, string padding = "", bool color = true)
     {
         if (value is RedisArray array)
@@ -181,11 +194,8 @@ public static class Repl
             if (!string.IsNullOrEmpty(padding)) Console.WriteLine();
             for (int i = 0; i < array.Values.Count; i++)
             {
-                //Console.ForegroundColor = ConsoleColor.DarkGray;
                 Console.Write($"{padding}{i + 1})");
                 await PrintRedisValue(array.Values[i], "  ");
-                //Console.ForegroundColor = ConsoleColor.Blue;
-                //Console.WriteLine(array.Values[i].Value);
             }
         }
         else
@@ -230,14 +240,25 @@ public static class Repl
         }
     }
 
-    public static async Task PrintMessage(string message, FormatSpan[] formats)
+    private static async Task PrintMessage(string message, FormatSpan[] formats)
     {
 
     }
 
-    public static void PrintConnectedInfo(Connection connection)
+    private static void PrintConnectedInfo(Connection connection)
     {
         var serverInfo = connection.ServerInfo;
+        if (serverInfo != null && (serverInfo.KeySpace?.Any() ?? false))
+        {
+            Console.WriteLine($"Connected to Redis {Bold(serverInfo.RedisVersion.ToString())} {Bold(serverInfo.RedisMode)}");
+            Console.WriteLine($"Memory: {Underline(serverInfo.UsedMemoryHuman)} / {Underline(serverInfo.TotalSystemMemoryHuman)}");
+            Console.WriteLine($"Available Databases:");
+            foreach (var ks in serverInfo.KeySpace)
+            {
+                Console.WriteLine($" {WithColor(ks.DBName, AnsiColor.White)} ({WithColor(ks.Keys.ToString(), AnsiColor.White)} Total Keys)");
+            }
+            
+        }
         /*foreach (var section in serverInfo.Keys)
         {
             Console.WriteLine($"{WithFormat(section, new ConsoleFormat(Bold: true, Foreground: AnsiColor.BrightBlue))}");
@@ -304,19 +325,15 @@ Another Text
         //Configure UI and ReadLine
         //ReadLine.AutoCompletionHandler = new UI.AutoCompletionHandler(documentation);
 
-        string promptFormat = $"{_ip}:{_port}> ";
-        int promptLength = promptFormat.Length;
 
- 
         var keyBindings = new KeyBindings(
                     //commitCompletion: new(new(ConsoleKey.Enter), new(ConsoleKey.Tab)),
                     //triggerCompletionList: new KeyPressPatterns(new(ConsoleModifiers.Control, ConsoleKey.Spacebar), new(ConsoleModifiers.Control, ConsoleKey.J),
                     triggerOverloadList: new(new KeyPressPattern(' ')));
 
         var promptConfiguration = new PromptConfiguration(
-                prompt: new FormattedString(promptFormat, new FormatSpan(0, promptLength - 2, AnsiColor.Red), new FormatSpan(promptLength - 2, 1, AnsiColor.Yellow)),
+                prompt: "Not Connected>",
                 keyBindings: keyBindings);
-
 
 
 
@@ -333,6 +350,7 @@ Another Text
             {
                 connection = Connection.Connect(_ip, _port);
                 PrintConnectedInfo(connection);
+                UpdatePrompt(connection, promptConfiguration);
             }
             catch (Exception ex)
             {
@@ -340,7 +358,7 @@ Another Text
             }
             
         }
-
+        
 
         ///fire and forget implementation, only happens when commands are sent through args[]
         if (connection != null && !string.IsNullOrWhiteSpace(commands))
@@ -378,16 +396,25 @@ Another Text
                     //do not send local commands to the server
                     if (command.Documentation == null || command.Documentation.Group != "application")
                     {
-                        connection.Send(command);
+                        bool allowToExecute = true;
+                        if (documentation.IsCommandDangerous(command.Name))
+                        {
+                            allowToExecute = AskforDangerousExecution(command);
 
-
-                        RedisValue value = connection.Receive();
-                        await PrintRedisValue(value);
+                            
+                        }
+                        if (allowToExecute)
+                        {
+                            connection.Send(command);
+                            RedisValue value = connection.Receive();
+                            await PrintRedisValue(value);
+                        }
                     }
-                } 
+                }
                 else
                 {
                     Console.WriteLine($"Disconnected, try connecting using {Underline("CONNECT")}");
+                    UpdatePrompt(connection, promptConfiguration);
                 }
 
 
@@ -412,12 +439,22 @@ Another Text
                                 } 
                                 catch (Exception ex)
                                 {
+                                    connection = null;
                                     PrintError(ex);
                                 }
+                                UpdatePrompt(connection, promptConfiguration);
                             }
                             
                         }
                     }
+
+                    if (command.Name == "SAFEKEYS" && connection != null)
+                    {
+                        string pattern = command.Args.Length > 0 ? command.Args[0] : "";
+                        var keys = connection.SafeKeys(pattern);
+                        await PrintRedisValues(keys);
+                    }
+
                     if (new[] { "HELP", "?" }.Contains(doc.Command))
                     {
                         PrintHelp();
@@ -430,5 +467,41 @@ Another Text
         }
 
         if (connection != null) connection.Close();
+    }
+
+    private static bool AskforDangerousExecution(ParsedCommand command)
+    {
+        bool execute = false;
+        var sb = new StringBuilder();
+        sb.Append($"The command {Bold(command.Name)} is considered dangerous to execute, execute anyway?");
+        if (command.Name == "KEYS") sb.Append($" You can execute {Underline("SCAN")} or {Underline("SEARCH")}");
+        sb.Append($" {WithColor("(Y/N)", AnsiColor.Yellow)} ");
+        sb.Append(AnsiEscapeCodes.Reset);
+        int messageLength = sb.Length;
+        Console.Write(sb.ToString());
+        var consoleKey = Console.ReadKey();
+        if (consoleKey.KeyChar == 'Y' || consoleKey.KeyChar == 'y')
+        {
+            execute = true;
+        }
+        Console.WriteLine();
+        return execute;
+    }
+
+    private static void UpdatePrompt(Connection? connection, PromptConfiguration prompt)
+    {
+        if (connection == null || !connection.IsConnected)
+        {
+            string promptFormat = $"DISCONNECTD> ";
+            int promptLength = promptFormat.Length;
+            prompt.Prompt = new FormattedString(promptFormat, new FormatSpan(0, promptLength - 2, AnsiColor.Red), new FormatSpan(promptLength - 2, 1, AnsiColor.Yellow));
+        } 
+        else
+        {
+            string promptFormat = $"{connection.Host}:{connection.Port}> ";
+            int promptLength = promptFormat.Length;
+            prompt.Prompt = new FormattedString(promptFormat, new FormatSpan(0, promptLength - 2, AnsiColor.Red), new FormatSpan(promptLength - 2, 1, AnsiColor.Yellow));
+        }
+        
     }
 }

@@ -6,10 +6,10 @@ namespace RedisMan.Terminal;
 /// TODO:
 ///     - [X] Implement System.CommandLine
 ///     - [X] args[] parser, for connection and command to execute
-///     - [ ] Repl.cs
-///     - [ ] CommandBuilder
+///     - [-] Repl.cs
+///     - [-] CommandBuilder
 ///     - [ ] Connection.cs
-///     - [ ] RESPParser.cs
+///     - [X] RESPParser.cs
 ///     - [ ] Gui.cs Mode
 /// </summary>
 internal class Program
