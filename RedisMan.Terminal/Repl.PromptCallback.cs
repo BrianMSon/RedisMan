@@ -3,16 +3,14 @@ using PrettyPrompt.Consoles;
 using PrettyPrompt.Documents;
 using PrettyPrompt;
 using RedisMan.Library.Commands;
-using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Diagnostics.CodeAnalysis;
 
 namespace RedisMan.Terminal;
 public static partial class Repl
 {
+    [SuppressMessage("ReSharper", "HeapView.ObjectAllocation.Evident")]
+    [SuppressMessage("ReSharper", "HeapView.DelegateAllocation")]
     public class RedisPromptCallBack : PromptCallbacks
     {
         Documentation _documentation;
@@ -26,29 +24,21 @@ public static partial class Repl
             // registers functions to be called when the user presses a key. The text
             // currently typed into the prompt, along with the caret position within
             // that text are provided as callback parameters.
-            yield return (new(ConsoleModifiers.Control, ConsoleKey.F1), PressedF1);
+            yield return (new KeyPressPattern(ConsoleModifiers.Control, ConsoleKey.F1), PressedF1);
         }
 
 
         protected override async Task<(IReadOnlyList<OverloadItem>, int ArgumentIndex)> GetOverloadsAsync(string text, int caret, CancellationToken cancellationToken)
         {
-            if (caret > 0)
-            {
-                var commandParts = text.Split(' ');
-                if (commandParts.Length > 1)
-                {
-                    var command = _documentation.Get(commandParts[0]);
-                    if (command != null)
-                    {
-                        var items = new List<OverloadItem>(1);
-                        var overloadItem = GetOverloadCommandDocumentation(command, text, caret);
-                        items.Add(overloadItem);
-                        return await Task.FromResult((items, 0));
-                    }
-                }
-            }
-
-            return EmptyOverload();
+            if (caret <= 0) return EmptyOverload();
+            var commandParts = text.Split(' ');
+            if (commandParts.Length <= 1) return EmptyOverload();
+            var command = _documentation.Get(commandParts[0]);
+            if (command == null) return EmptyOverload();
+            var items = new List<OverloadItem>(1);
+            var overloadItem = GetOverloadCommandDocumentation(command, text, caret);
+            items.Add(overloadItem);
+            return await Task.FromResult((items, 0));
         }
 
 
@@ -75,10 +65,8 @@ public static partial class Repl
                     .ToArray()
                 );
             }
-            else
-            {
-                return Task.FromResult<IReadOnlyList<CompletionItem>>(new CompletionItem[] { });
-            }
+
+            return Task.FromResult<IReadOnlyList<CompletionItem>>(Array.Empty<CompletionItem>());
         }
 
 

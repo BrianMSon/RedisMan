@@ -11,6 +11,7 @@ namespace RedisMan.Terminal;
 ///     - [ ] Connection.cs
 ///     - [X] RESPParser.cs
 ///     - [ ] Gui.cs Mode
+///     - [X] Fix "Trim unused code"  for Reflection
 /// </summary>
 internal class Program
 {

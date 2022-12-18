@@ -4,19 +4,8 @@ using RedisMan.Library.Values;
 using RedisMan.Library;
 using PrettyPrompt.Highlighting;
 using PrettyPrompt.Consoles;
-using PrettyPrompt.Documents;
-using System.Collections.Immutable;
-using System.Diagnostics;
 using PrettyPrompt.Completion;
-using System.Runtime.CompilerServices;
-using System.CommandLine;
-using System.Collections.ObjectModel;
-using System;
-using System.ComponentModel.DataAnnotations;
-using System.Xml;
-using System.Drawing;
 using System.Text;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace RedisMan.Terminal;
 /// <summary>
@@ -35,7 +24,7 @@ namespace RedisMan.Terminal;
 ///     - [X] Prevent sending dangerous commands
 ///     - [X] Local command to autolist all keys (safely)
 ///     - [X] View command to automatically view data regardless of type\
-///     - [ ] implement safe VIEW command
+///     - [X] implement safe VIEW command
 ///     - [ ] CHECK DB2 key opsviewer:tools:phlytest:PHLY18-00126 , why so many nulls
 ///     - [ ] local command to save command output to file
 ///     - [ ] pipe commands to shell
@@ -46,16 +35,14 @@ namespace RedisMan.Terminal;
 
 public static partial class Repl
 {
-    
-
-    static (IReadOnlyList<OverloadItem> Overloads, int ArgumentIndex) EmptyOverload() => (Array.Empty<OverloadItem>(), 0);
+    private static (IReadOnlyList<OverloadItem> Overloads, int ArgumentIndex) EmptyOverload() => (Array.Empty<OverloadItem>(), 0);
 
 
 
 
     private static Task<KeyPressCallbackResult?> PressedF1(string text, int caret, CancellationToken cancellationToken)
     {
-        string wordUnderCursor = GetWordAtCaret(text, caret).ToLower();
+        var wordUnderCursor = GetWordAtCaret(text, caret).ToLower();
 
         // since we return a null KeyPressCallbackResult here, the user will remain on the current prompt
         // and will still be able to edit the input.
@@ -66,9 +53,9 @@ public static partial class Repl
         // local functions
         static string GetWordAtCaret(string text, int caret)
         {
-            var words = text.Split(new[] { ' ', '\n' });
-            string wordAtCaret = string.Empty;
-            int currentIndex = 0;
+            var words = text.Split(' ', '\n');
+            var wordAtCaret = string.Empty;
+            var currentIndex = 0;
             foreach (var word in words)
             {
                 if (currentIndex < caret && caret < currentIndex + word.Length)
@@ -83,32 +70,30 @@ public static partial class Repl
         }
     }
 
-    public static async Task PrintRedisValues(IEnumerable<RedisValue> values)
+    private static async Task PrintRedisValues(IEnumerable<RedisValue> values, int warningAt = 100)
     {
-        int i = 0;
+        var i = 0;
         foreach (var value in values)
         {
             i++;
-            Console.Write($"{i + 1})");
+            Console.Write($"{i})");
             await PrintRedisValue(value, "  ");
-            if (i % 100 == 0)
+            if (i % warningAt != 0) continue;
+            var sb = new StringBuilder();
+            sb.Append("Continue Listing?");
+            sb.Append($" {WithColor("(Y/N)", AnsiColor.Yellow)} ");
+            sb.Append(AnsiEscapeCodes.Reset);
+            Console.Write(sb.ToString());
+            var consoleKey = Console.ReadKey();
+            if (consoleKey.KeyChar != 'Y' && consoleKey.KeyChar != 'y')
             {
-                var sb = new StringBuilder();
-                sb.Append($"Continue Listing?");
-                sb.Append($" {WithColor("(Y/N)", AnsiColor.Yellow)} ");
-                sb.Append(AnsiEscapeCodes.Reset);
-                Console.Write(sb.ToString());
-                var consoleKey = Console.ReadKey();
-                if (consoleKey.KeyChar != 'Y' && consoleKey.KeyChar != 'y')
-                {
-                    break;
-                }
-                Console.WriteLine();
+                break;
             }
+            Console.WriteLine();
         }
     }
 
-    public static async Task PrintRedisValue(RedisValue value, string padding = "", bool color = true)
+    private static async Task PrintRedisValue(RedisValue value, string padding = "", bool color = true)
     {
         if (value is RedisArray array)
         {
@@ -185,9 +170,9 @@ public static partial class Repl
         var documentation = new Documentation();
         documentation.Generate();
 
-        string _ip = host ?? "127.0.0.1";
-        int _port = port ?? 6379;
-        Connection connection = null;
+        var _ip = host ?? "127.0.0.1";
+        var _port = port ?? 6379;
+        Connection? connection = null;
 
         // Enable history
         //ReadLine.HistoryEnabled = true;
@@ -198,7 +183,7 @@ public static partial class Repl
         var keyBindings = new KeyBindings(
                     //commitCompletion: new(new(ConsoleKey.Enter), new(ConsoleKey.Tab)),
                     //triggerCompletionList: new KeyPressPatterns(new(ConsoleModifiers.Control, ConsoleKey.Spacebar), new(ConsoleModifiers.Control, ConsoleKey.J),
-                    triggerOverloadList: new(new KeyPressPattern(' ')));
+                    triggerOverloadList: new KeyPressPatterns(new KeyPressPattern(character: ' ')));
 
         var promptConfiguration = new PromptConfiguration(
                 prompt: "Not Connected>",
@@ -229,7 +214,7 @@ public static partial class Repl
         }
         
 
-        ///fire and forget implementation, only happens when commands are sent through args[]
+        //fire and forget implementation, only happens when commands are sent through args[]
         if (connection != null && !string.IsNullOrWhiteSpace(commands))
         {
             //commands
@@ -261,22 +246,22 @@ public static partial class Repl
                 }
                 string input = command.Text;
 
-                if (connection != null && connection.IsConnected)
+                if (connection is { IsConnected: true })
                 {
                     //do not send local commands to the server
-                    if (command.Documentation == null || command.Documentation.Group != "application")
+                    if (command.Documentation is not { Group: "application" })
                     {
-                        bool allowToExecute = true;
+                        var allowToExecute = true;
                         if (documentation.IsCommandDangerous(command.Name))
                         {
-                            allowToExecute = AskforDangerousExecution(command);
+                            allowToExecute = AskForDangerousExecution(command);
 
                             
                         }
                         if (allowToExecute)
                         {
                             connection.Send(command);
-                            RedisValue value = connection.Receive();
+                            var value = connection.Receive();
                             await PrintRedisValue(value);
                         }
                     }
@@ -289,7 +274,7 @@ public static partial class Repl
 
 
                 // evaluate built in commands
-                if (command.Documentation != null && command.Documentation.Group == "application")
+                if (command.Documentation is { Group: "application" })
                 {
                     var doc = command.Documentation;
                     if (doc.Command == "EXIT") {
@@ -300,10 +285,10 @@ public static partial class Repl
                     if (doc.Command == "CONNECT") { 
                         if (command.Args.Length > 1)
                         {
-                            string newHost = command.Args[0];
-                            string sPort = command.Args[1];
+                            var newHost = command.Args[0];
+                            var sPort = command.Args[1];
                             Console.WriteLine($"Connecting to {Underline(newHost)}:{Underline(sPort)}");
-                            if (int.TryParse(sPort, out int intPort))
+                            if (int.TryParse(sPort, out var intPort))
                             {
                                 try
                                 {
@@ -321,7 +306,7 @@ public static partial class Repl
                         }
                     }
 
-                    if (new[] { "HELP", "?" }.Contains(doc.Command))
+                    if (new string[] { "HELP", "?" }.Contains(doc.Command))
                     {
                         PrintHelp();
                         continue;
@@ -331,15 +316,25 @@ public static partial class Repl
                     {
                         if (command.Name == "SAFEKEYS")
                         {
-                            string pattern = command.Args.Length > 0 ? command.Args[0] : "";
+                            var pattern = command.Args.Length > 0 ? command.Args[0] : "";
                             var keys = connection.SafeKeys(pattern);
-                            await PrintRedisValues(keys);
+                            await PrintRedisValues(keys, 100);
                         }
 
-                        if (command.Name == "VIEW" && command.Args.Length > 0)
+                        if (command is { Name: "VIEW", Args.Length: > 0 })
                         {
-                            var value = connection.GetKeyValue(command);
-                            await PrintRedisValue(value);
+                            var (type, value, enumerable) = connection.GetKeyValue(command);
+                            if (value != null)
+                            {
+                                await PrintRedisValue(value);
+                            }
+                            if (enumerable != null)
+                            {
+                                int warningAt = 50;
+                                if (type == "stream") warningAt = 10;
+                                if (type == "hash") warningAt = 10;
+                                await PrintRedisValues(enumerable, warningAt);
+                            }
                         }
                     }
                 }
@@ -350,18 +345,17 @@ public static partial class Repl
 
     }
 
-    private static bool AskforDangerousExecution(ParsedCommand command)
+    private static bool AskForDangerousExecution(ParsedCommand command)
     {
-        bool execute = false;
+        var execute = false;
         var sb = new StringBuilder();
         sb.Append($"The command {Bold(command.Name)} is considered dangerous to execute, execute anyway?");
         if (command.Name == "KEYS") sb.Append($" You can execute {Underline("SCAN")} or {Underline("SEARCH")}");
         sb.Append($" {WithColor("(Y/N)", AnsiColor.Yellow)} ");
         sb.Append(AnsiEscapeCodes.Reset);
-        int messageLength = sb.Length;
         Console.Write(sb.ToString());
         var consoleKey = Console.ReadKey();
-        if (consoleKey.KeyChar == 'Y' || consoleKey.KeyChar == 'y')
+        if (consoleKey.KeyChar is 'Y' or 'y')
         {
             execute = true;
         }
@@ -371,17 +365,19 @@ public static partial class Repl
 
     private static void UpdatePrompt(Connection? connection, PromptConfiguration prompt)
     {
-        if (connection == null || !connection.IsConnected)
+        if (connection is not { IsConnected: true })
         {
-            string promptFormat = $"DISCONNECTD> ";
-            int promptLength = promptFormat.Length;
-            prompt.Prompt = new FormattedString(promptFormat, new FormatSpan(0, promptLength - 2, AnsiColor.Red), new FormatSpan(promptLength - 2, 1, AnsiColor.Yellow));
+            var promptFormat = "DISCONNECTED> ";
+            var promptLength = promptFormat.Length;
+            prompt.Prompt = new FormattedString(promptFormat, new FormatSpan(0, promptLength - 2, AnsiColor.Red),
+                new FormatSpan(promptLength - 2, 1, AnsiColor.Yellow));
         } 
         else
         {
-            string promptFormat = $"{connection.Host}:{connection.Port}> ";
-            int promptLength = promptFormat.Length;
-            prompt.Prompt = new FormattedString(promptFormat, new FormatSpan(0, promptLength - 2, AnsiColor.Red), new FormatSpan(promptLength - 2, 1, AnsiColor.Yellow));
+            var promptFormat = $"{connection.Host}:{connection.Port}> ";
+            var promptLength = promptFormat.Length;
+            prompt.Prompt = new FormattedString(promptFormat, new FormatSpan(0, promptLength - 2, AnsiColor.Red),
+                new FormatSpan(promptLength - 2, 1, AnsiColor.Yellow));
         }
         
     }

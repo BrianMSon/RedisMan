@@ -12,30 +12,27 @@ using System.Xml.Linq;
 namespace RedisMan.Library.Commands;
 public class Documentation
 {
-    private string[] DangerousCommands = new string[]
-    {
+    private readonly string[] _dangerousCommands = {
         "FLUSHDB", "FLUSHALL", "KEYS", "PEXPIRE", "DEL", "CONFIG", 
         "SHUTDOWN", "BGREWRITEAOF", "BGSAVE", "SAVE", "SPOP", "SREM", "RENAME", "DEBUG"
     };
 
-    public List<CommandDoc> Docs { get; set; }
+    public List<CommandDoc> Docs { get; private set; } = new();
 
-
-    public Documentation()
-    {
-        Docs = new List<CommandDoc>();
-    }
 
     public void Generate()
     {
-        string filename = "simple_commands.json";
+        var filename = "simple_commands.json";
         if (File.Exists(filename))
         {
             string json = File.ReadAllText(filename);
+            /* This doesnt work in rider, so i will disable it for now
             var docs = (List<CommandDoc>)JsonSerializer.Deserialize(
                 json,
                 typeof(List<CommandDoc>),
                 DocumentationReaderContext.Default);
+            */
+            var docs = JsonSerializer.Deserialize<List<CommandDoc>>(json);
             if (docs != null) Docs = docs;
         }
 
@@ -161,7 +158,7 @@ public class Documentation
 
     public bool IsCommandDangerous(string command)
     {
-        if (DangerousCommands.Contains(command.ToUpperInvariant()))
+        if (_dangerousCommands.Contains(command.ToUpperInvariant()))
         {
             return true;
         }
@@ -180,8 +177,9 @@ public static class DocumentationReader
     
 }
 
-
+/* This doesnt work in rider, i will disable it for now
 [JsonSerializable(typeof(List<CommandDoc>))]
 public partial class DocumentationReaderContext : JsonSerializerContext
 {
 }
+*/

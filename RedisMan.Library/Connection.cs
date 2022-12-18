@@ -4,6 +4,7 @@ using RedisMan.Library.Values;
 
 using System.Net.Sockets;
 using System.Text;
+using ValueType = RedisMan.Library.Values.ValueType;
 
 namespace RedisMan.Library;
 
@@ -50,7 +51,7 @@ public class Connection : IDisposable
         TcpClient.Close();
     }
 
-    public static Connection Connect(string host, int port)
+    public static Connection? Connect(string host, int port)
     {
         var connection = new Connection()
         {
@@ -145,9 +146,141 @@ public class Connection : IDisposable
 
             if (cursor == "0") stillReading = false;
         }
-        
+    }
+    
+    private IEnumerable<RedisValue> SafeSets(string key, string pattern = "")
+    {
+        string cursor = "0";
+        bool stillReading = true;
+        while (stillReading)
+        {
+            Send($"SSCAN {key} {cursor}{(!string.IsNullOrWhiteSpace(pattern) ? $" MATCH {pattern}" : "")}");
+            if (Receive() is RedisArray array)
+            {
+                if (array.Length > 1)
+                {
+                    cursor = array.Values[0].Value;
+                    if (array.Values[1] is RedisArray sub)
+                    {
+                        foreach (var element in sub.Values)
+                        {
+                            yield return element;
+                        }
+                    } else stillReading= false;
+                }
+                else stillReading = false;
+            }
+
+            if (cursor == "0") stillReading = false;
+        }
     }
 
+    private IEnumerable<RedisValue> SafeSortedSets(string key, string pattern = "")
+    {
+        string cursor = "0";
+        bool stillReading = true;
+        while (stillReading)
+        {
+            Send($"ZSCAN {key} {cursor}{(!string.IsNullOrWhiteSpace(pattern) ? $" MATCH {pattern}" : "")}");
+            if (Receive() is RedisArray array)
+            {
+                if (array.Length > 1)
+                {
+                    cursor = array.Values[0].Value;
+                    if (array.Values[1] is RedisArray sub)
+                    {
+                        foreach (var element in sub.Values)
+                        {
+                            yield return element;
+                        }
+                    } else stillReading= false;
+                }
+                else stillReading = false;
+            }
+
+            if (cursor == "0") stillReading = false;
+        }
+    }
+    
+    private IEnumerable<RedisValue> SafeHash(string key, string pattern = "")
+    {
+        string cursor = "0";
+        bool stillReading = true;
+        while (stillReading)
+        {
+            Send($"HSCAN {key} {cursor}{(!string.IsNullOrWhiteSpace(pattern) ? $" MATCH {pattern}" : "")}");
+            if (Receive() is RedisArray array)
+            {
+                if (array.Length > 1)
+                {
+                    cursor = array.Values[0].Value;
+                }
+                else stillReading = false;
+                
+                foreach (var element in array.Values)
+                {
+                    yield return element;    
+                }
+            }
+
+            if (cursor == "0") stillReading = false;
+        }
+    }
+    
+    
+    private IEnumerable<RedisValue> SafeStream(string key)
+    {
+        string cursor = "-";
+        bool stillReading = true;
+        while (stillReading)
+        {
+            Send($"XRANGE {key} {cursor} + COUNT 50");
+            if (Receive() is RedisArray array) //top level, contains only pairs
+            {
+                if (array.Length > 0)
+                {
+                    if (array.Values[0] is RedisArray pair)
+                    {
+                        cursor = pair.Values[0].Value + "1";
+                    }
+                    else stillReading = false;
+
+                    foreach (var element in array.Values)
+                    {
+                        yield return element;    
+                    }
+                    
+                }
+                else stillReading = false;
+            }
+            else stillReading = false;
+        }
+    }
+    
+    private IEnumerable<RedisValue>? SafeList(string key)
+    {
+        Send($"LLEN {key}");
+        var value = Receive();
+        int llen = 0;
+        if (value.Type == ValueType.Integer)
+        {
+            int.TryParse(value.Value, out llen);
+        }
+        
+
+        for (int i = 0; i < llen; i+=100)
+        {
+            int to = i + 100;
+            Send($"LRANGE {key} {i} {to}");
+            if (Receive() is RedisArray array)
+            {
+                foreach (var el in array.Values)
+                {
+                    yield return el;
+                }                
+            }
+        }
+    }
 
     /// <summary>
     /// Gets a Key value regardless of type
@@ -155,37 +288,32 @@ public class Connection : IDisposable
     /// <param name="command"></param>
     /// <returns></returns>
     /// <exception cref="NotImplementedException"></exception>
-    public RedisValue GetKeyValue(ParsedCommand command)
+    public (string type, RedisValue? value, IEnumerable<RedisValue>? collection) GetKeyValue(ParsedCommand command)
     {
-        string key = command.Args[0];
+        var key = command.Args[0];
         Send($"TYPE {key}");
-        RedisValue value = Receive(); //keyName
+        var value = Receive(); //keyName
         if (value is RedisString stringValue)
         {
-            string keyType = stringValue.Value ?? "";
+            var keyType = stringValue.Value ?? "";
             switch (keyType)
             {
                 case "string":
                     Send($"GET {key}");
-                    return Receive();
+                    return (keyType,Receive(), null);
                 case "list":
-                    Send($"LRANGE {key} 0 -1");
-                    return Receive();
+                    return (keyType,null, SafeList(key));
                 case "set":
-                    Send($"SMEMBERS {key}");
-                    return Receive();
+                    return (keyType,null, SafeSets(key));
                 case "zset":
-                    Send($"ZRANGE {key} 0 -1");
-                    return Receive();
+                    return (keyType,null, SafeSortedSets(key));
                 case "hash":
-                    Send($"HGETALL {key}");
-                    return Receive();
+                    return (keyType,null, SafeHash(key));
                 case "stream":
-                    Send($"XRANGE {key} - +");
-                    return Receive();
+                    return (keyType,null, SafeStream(key));
             }
         }
-        return RedisValue.Null;
+        return ("", RedisValue.Null, null);
         //types that can be returned
     }
 }

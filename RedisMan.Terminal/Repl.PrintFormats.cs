@@ -23,10 +23,10 @@ public static partial class Repl
         var format = new ConsoleFormat(Bold: true, Foreground: AnsiColor.BrightRed);
         Console.Error.Write(AnsiEscapeCodes.Reset);
         Console.Error.Write(AnsiEscapeCodes.ToAnsiEscapeSequenceSlow(format) + "Error: " + AnsiEscapeCodes.Reset);
-        Console.Error.WriteLine(AnsiEscapeCodes.ToAnsiEscapeSequenceSlow(new ConsoleFormat(Foreground: AnsiColor.Red)) + ex.Message + AnsiEscapeCodes.Reset);
+        Console.Error.WriteLine(AnsiEscapeCodes.ToAnsiEscapeSequenceSlow(new ConsoleFormat(Foreground: AnsiColor.Red)) + ex.StackTrace + AnsiEscapeCodes.Reset);
     }
 
-    private static void PrintConnectedInfo(Connection connection)
+    private static void PrintConnectedInfo(Connection? connection)
     {
         var serverInfo = connection.ServerInfo;
         if (serverInfo != null && (serverInfo.KeySpace?.Any() ?? false))

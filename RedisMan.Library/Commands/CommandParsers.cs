@@ -82,6 +82,13 @@ public class CommandParser
     public static ServerInfo ParseInfoOutput(RedisBulkString info)
     {
         ServerInfo serverInfo = new();
+        ///These assignments are needed to avoid trimming errors on reflection
+        serverInfo.RedisVersion = string.Empty;
+        serverInfo.RedisMode = string.Empty;
+        serverInfo.UsedMemoryHuman = string.Empty;
+        serverInfo.TotalSystemMemoryHuman = string.Empty;
+        
+        
         int ParseInt(string value)
         {
             if (int.TryParse(value, out int parsedInt))
@@ -143,6 +150,7 @@ public class CommandParser
                             {
                                 if (properties.ContainsKey(values[0]))
                                 {
+                                    Console.WriteLine($"{values[0]} {values[1]}");
                                     var property = properties[values[0]];
                                     if (property.PropertyType == typeof(string))
                                         property.SetValue(serverInfo, values[1]);
