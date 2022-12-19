@@ -17,7 +17,7 @@ public class Connection : IDisposable
     public int ReceiveTimeout { get; set; } = 1000;
     private TcpClient TcpClient { get; set; }
     public NetworkStream Stream { get; set; }
-    public RESPParser Parser { get; set; }
+    public RespParser Parser { get; set; }
     public ServerInfo ServerInfo { get; set; }
 
     public bool IsConnected { get => Stream.Socket.Connected; }
@@ -38,7 +38,7 @@ public class Connection : IDisposable
         TcpClient.Connect(Host, Port);
 
         Stream = TcpClient.GetStream();
-        if (Parser is null) Parser = new RESPParser();
+        if (Parser is null) Parser = new RespParser();
         Parser.Reset(Stream);
     }
 

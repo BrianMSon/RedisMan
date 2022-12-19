@@ -13,17 +13,17 @@ namespace RedisMan.Library;
 ///     - [ ] Rent and reuse char[] data
 ///     - [ ] Make it Fast (Span<T>)
 /// </summary>
-public class RESPParser : IDisposable
+public class RespParser : IDisposable
 {
     const int BUFFER_SIZE = 1024;
-    char[] data; //rent this memory
+    char[]? data; //rent this memory
     byte[] buffer;
     private int _pos = 0;
 
     private bool eof = false;
-    private NetworkStream _stream;
+    private NetworkStream? _stream;
 
-    public RESPParser()
+    public RespParser()
     {
         buffer = new byte[BUFFER_SIZE];
         data = new char[BUFFER_SIZE];
@@ -115,18 +115,17 @@ public class RESPParser : IDisposable
         //Parse the number of characters to read
         if (int.TryParse(StringBuilderCache.GetStringAndRelease(builder), out length))
         {
+            builder = StringBuilderCache.Acquire();
             if (length > 0)
             {
-                builder = StringBuilderCache.Acquire();
                 for (int i = 0; i < length; i++)
                 {
                     builder.Append(ReadChar()); //Read Binary Safe Characters
                 }
-                ReadChar(); //Consume \r
-                ReadChar(); //Consume \n
-
-                return StringBuilderCache.GetStringAndRelease(builder);
             }
+            ReadChar(); //Consume \r
+            ReadChar(); //Consume \n
+            return StringBuilderCache.GetStringAndRelease(builder);
         }
         
         return null;
@@ -144,7 +143,8 @@ public class RESPParser : IDisposable
 
     public RedisValue ParseValue()
     {
-        var redisValue = RedisValue.FromByte(ReadChar());
+        var typeChar = ReadChar();
+        var redisValue = RedisValue.FromByte(typeChar);
         switch (redisValue.Type)
         {
             case Values.ValueType.BulkString:
@@ -201,7 +201,7 @@ public class RESPParser : IDisposable
 
         }
 
-        return new RedisNull();
+        return RedisValue.Null;
     }
 
     public void Dispose()

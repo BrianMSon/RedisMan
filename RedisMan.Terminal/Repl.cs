@@ -25,10 +25,11 @@ namespace RedisMan.Terminal;
 ///     - [X] Local command to autolist all keys (safely)
 ///     - [X] View command to automatically view data regardless of type\
 ///     - [X] implement safe VIEW command
-///     - [ ] CHECK DB2 key opsviewer:tools:phlytest:PHLY18-00126 , why so many nulls
+///     - [X] CHECK DB2 key opsviewer:tools:phlytest:PHLY18-00126 , why so many nulls
 ///     - [ ] local command to save command output to file
 ///     - [ ] pipe commands to shell
 ///     - [X] Test Remote git repository
+///     - [ ] Implement AUTH
 /// </summary>
 
 
@@ -379,6 +380,6 @@ public static partial class Repl
             prompt.Prompt = new FormattedString(promptFormat, new FormatSpan(0, promptLength - 2, AnsiColor.Red),
                 new FormatSpan(promptLength - 2, 1, AnsiColor.Yellow));
         }
-        
     }
+
 }
