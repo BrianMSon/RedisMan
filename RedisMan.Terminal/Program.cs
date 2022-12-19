@@ -24,20 +24,24 @@ internal class Program
         portOption.AddAlias("-p");
         var commandOption = new Option<string?>("--command", description: "Command to Execute");
         commandOption.AddAlias("-c");
+        var usernameOption = new Option<string?>(name: "--username", description: "username to authenticate.", getDefaultValue: () => null);
+        portOption.AddAlias("-u");
+        var passwordOption = new Option<string?>(name: "--password", description: "password to authenticate.", getDefaultValue: () => null);
+       
 
         var guiCommand = new Command("gui", description: "Terminal GUI")
         {
-            hostOption, portOption
+            hostOption, portOption, usernameOption, passwordOption
         };
 
 
         var rootCmd = new RootCommand()
         {
-            hostOption, portOption, commandOption
+            hostOption, portOption, commandOption, usernameOption, passwordOption
         };
         rootCmd.AddCommand(guiCommand);
 
-        rootCmd.SetHandler(Repl.Run, hostOption, portOption, commandOption);
+        rootCmd.SetHandler(Repl.Run, hostOption, portOption, commandOption, usernameOption, passwordOption);
         guiCommand.SetHandler(Gui.Run, hostOption, portOption);
 
         return rootCmd.Invoke(args);

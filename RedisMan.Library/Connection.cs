@@ -19,8 +19,11 @@ public class Connection : IDisposable
     public NetworkStream Stream { get; set; }
     public RespParser Parser { get; set; }
     public ServerInfo ServerInfo { get; set; }
+    
 
     public bool IsConnected { get => Stream.Socket.Connected; }
+
+    public bool? IsAuthenticated { get; set; } = null;
 
 
     //connectionstring= redis://user:password@host:port/dbnum:
@@ -51,7 +54,7 @@ public class Connection : IDisposable
         TcpClient.Close();
     }
 
-    public static Connection? Connect(string host, int port)
+    public static Connection? Connect(string host, int port, string password = "", string username = "")
     {
         var connection = new Connection()
         {
@@ -61,9 +64,30 @@ public class Connection : IDisposable
 
         connection.TryConnecting();
 
+
         ///After connecting, grab server information if available
         if (connection.IsConnected)
         {
+            //Legacy connection
+            if (!string.IsNullOrWhiteSpace(password) && string.IsNullOrWhiteSpace(username))
+            {
+                connection.Send($"AUTH {password}");
+                if (connection.Receive() is RedisString value)
+                {
+                    connection.IsAuthenticated = value.Value == "OK";
+                }
+            }
+            
+            //new ACL connection
+            if (!string.IsNullOrWhiteSpace(password) && !string.IsNullOrWhiteSpace(username))
+            {
+                connection.Send($"AUTH {username} {password}");
+                if (connection.Receive() is RedisString value)
+                {
+                    connection.IsAuthenticated = value.Value == "OK";
+                }
+            }
+            
             connection.GetServerInfo();
         }
 

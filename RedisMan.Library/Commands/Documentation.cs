@@ -48,7 +48,7 @@ public class Documentation
 
         Docs.Add(new CommandDoc()
         {
-            Arguments = "ip port",
+            Arguments = "ip [port] <[password] | [username] [password]>",
             Command = "CONNECT",
             Group = "application",
             Since = "",
@@ -93,6 +93,17 @@ public class Documentation
             Group = "application",
             Since = "",
             Summary = "View key value regardless of type."
+
+        });
+        
+        
+        Docs.Add(new CommandDoc()
+        {
+            Arguments = "command",
+            Command = "EXPORT",
+            Group = "application",
+            Since = "",
+            Summary = "Export the output of the command to a filename"
 
         });
     }

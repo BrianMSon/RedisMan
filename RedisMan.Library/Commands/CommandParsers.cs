@@ -150,7 +150,6 @@ public class CommandParser
                             {
                                 if (properties.ContainsKey(values[0]))
                                 {
-                                    Console.WriteLine($"{values[0]} {values[1]}");
                                     var property = properties[values[0]];
                                     if (property.PropertyType == typeof(string))
                                         property.SetValue(serverInfo, values[1]);

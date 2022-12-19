@@ -29,7 +29,8 @@ namespace RedisMan.Terminal;
 ///     - [ ] local command to save command output to file
 ///     - [ ] pipe commands to shell
 ///     - [X] Test Remote git repository
-///     - [ ] Implement AUTH
+///     - [X] Implement AUTH
+///     - [ ] Implement 
 /// </summary>
 
 
@@ -166,7 +167,7 @@ public static partial class Repl
         AnsiEscapeCodes.ToAnsiEscapeSequenceSlow(format) + word + AnsiEscapeCodes.Reset;
 
 
-    public static async Task Run(string? host, int? port, string? commands)
+    public static async Task Run(string? host, int? port, string? commands, string? username, string? password)
     {
         var documentation = new Documentation();
         documentation.Generate();
@@ -203,7 +204,7 @@ public static partial class Repl
         {
             try
             {
-                connection = Connection.Connect(_ip, _port);
+                connection = Connection.Connect(_ip, _port, password ?? string.Empty, username ?? string.Empty);
                 PrintConnectedInfo(connection);
                 UpdatePrompt(connection, promptConfiguration);
             }
@@ -293,7 +294,17 @@ public static partial class Repl
                             {
                                 try
                                 {
-                                    connection = Connection.Connect(newHost, intPort);
+                                    string conPassword = string.Empty;
+                                    string conUsername = string.Empty;
+                                    //Legaccy Authentication
+                                    if (command.Args.Length == 3) conPassword = command.Args[2];
+                                    //New ACL Authentication
+                                    if (command.Args.Length == 4)
+                                    {
+                                        conUsername = command.Args[2];
+                                        conPassword = command.Args[3];
+                                    }
+                                    connection = Connection.Connect(newHost, intPort, conPassword, conUsername);
                                     PrintConnectedInfo(connection);
                                 } 
                                 catch (Exception ex)
@@ -337,6 +348,15 @@ public static partial class Repl
                                 await PrintRedisValues(enumerable, warningAt);
                             }
                         }
+
+                        if (command is { Name: "EXPORT", Args.Length: > 0 })
+                        {
+                            string cmdToExport = String.Join(' ', command.Args);
+                            var subCommand = commandParser.Parse((cmdToExport));
+                            if (subCommand is not null)
+                                Export(connection, subCommand);
+                            
+                        }
                     }
                 }
 
@@ -344,6 +364,32 @@ public static partial class Repl
             }
         }
 
+    }
+
+    private static async Task Export(Connection connection, ParsedCommand command)
+    {
+        string outputFilename = "output.txt";
+        if (command is { Name: "VIEW", Args.Length: > 0 })
+        {
+            var (type, value, enumerable) = connection.GetKeyValue(command);
+            if (value != null)
+            {
+                //await PrintRedisValue(value);
+                //output single value to text file
+            }
+            if (enumerable != null)
+            {
+                //await PrintRedisValues(enumerable, warningAt);
+                //output collection to text file
+            }
+        } 
+        else
+        {
+            connection.Send(command);
+            var value = connection.Receive();
+            //save single value to file
+            //await PrintRedisValue(value);            
+        }
     }
 
     private static bool AskForDangerousExecution(ParsedCommand command)
