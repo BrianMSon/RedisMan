@@ -3,20 +3,11 @@ using PrettyPrompt.Consoles;
 using PrettyPrompt.Highlighting;
 using RedisMan.Library;
 using RedisMan.Library.Commands;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using static RedisMan.Terminal.PrintHelpers;
 
 namespace RedisMan.Terminal;
 public static partial class Repl
 {
-    private static async Task PrintMessage(string message, FormatSpan[] formats)
-    {
-
-    }
-
     private static void PrintError(Exception ex)
     {
 

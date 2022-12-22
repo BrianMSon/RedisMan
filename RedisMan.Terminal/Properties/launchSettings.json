@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "RedisMan.Terminal": {
+      "commandName": "Project",
+      "commandLineArgs": "--host 127.0.0.1 --port 6379"
+    },
+    "WSL": {
+      "commandName": "WSL2",
+      "distributionName": ""
+    }
+  }
+}

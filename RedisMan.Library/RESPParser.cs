@@ -206,7 +206,7 @@ public class RespParser : IDisposable
 
     public void Dispose()
     {
-        _stream.Dispose();
+        _stream!.Dispose();
     }
 }
 
