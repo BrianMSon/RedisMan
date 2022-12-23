@@ -43,7 +43,7 @@ namespace RedisMan.Terminal;
 ///     - [X] Implement AUTH
 ///     - [ ] Implement TLS? 
 ///     - [ ] Implement RESP3
-///     - [ ] Implement SUBSCRIBE
+///     - [X] Implement SUBSCRIBE
 ///     - [ ] Implement XREAD
 /// </summary>
 public static partial class Repl
@@ -166,7 +166,26 @@ public static partial class Repl
                 if (connection is { IsConnected: true })
                 {
                     //do not send local commands to the server
-                    if (command.Documentation is not { Group: "application" })
+                    if (command is { Name: "SUBSCRIBE" })
+                    {
+                        connection.Send(command);
+                        CancellationTokenSource cancelSource = new CancellationTokenSource();
+                        var cancelToken = cancelSource.Token;
+                        foreach (var value in connection.Subscribe(cancelToken))
+                        {
+                            if (Console.KeyAvailable)
+                            {
+                                if (Console.ReadKey().KeyChar == 'q')
+                                {
+                                    cancelSource.Cancel();
+                                    Environment.Exit(0);
+                                }
+                            }
+                                
+                            await ValueOutput.PrintRedisValue(value);
+                        }
+                    }
+                    else if (command.Documentation is not { Group: "application" })
                     {
                         var allowToExecute = true;
                         if (documentation.IsCommandDangerous(command.Name))

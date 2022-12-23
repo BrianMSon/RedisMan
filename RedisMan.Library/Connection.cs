@@ -132,6 +132,18 @@ public class Connection : IDisposable
 
         return Parser.Parse();
     }
+    
+    
+    public IEnumerable<RedisValue> Subscribe(CancellationToken cancelToken)
+    {
+        //wait until data is available here
+        while (!cancelToken.IsCancellationRequested && Stream.Socket.Connected)
+        {
+            while (!Stream.DataAvailable && Stream.Socket.Connected) Thread.Sleep(100);
+            yield return Parser.Parse();            
+        }
+
+    }
 
     private void GetServerInfo()
     {
