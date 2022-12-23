@@ -1,4 +1,5 @@
-﻿using RedisMan.Library.Commands;
+﻿using System.Diagnostics;
+using RedisMan.Library.Commands;
 using RedisMan.Library.Models;
 using RedisMan.Library.Values;
 
@@ -124,11 +125,24 @@ public class Connection : IDisposable
         // Receive ack.
     }
 
-    public RedisValue Receive()
+    /// <summary>
+    /// Tries to read a value from the connection, until a timeout is reached
+    /// </summary>
+    /// <param name="timeout"></param>
+    /// <returns></returns>
+    public RedisValue Receive(int timeout = -1)
     {
+        var sw = Stopwatch.StartNew();
         //wait until data is available here
         while (!Stream.DataAvailable && Stream.Socket.Connected)
+        {
+            if (timeout > 0 && sw.Elapsed.Seconds > timeout)
+            {
+                sw.Stop();
+                return new RedisError() { Value = "Command Timeout" };
+            }
             Thread.Sleep(100);
+        }
 
         return Parser.Parse();
     }
@@ -144,6 +158,7 @@ public class Connection : IDisposable
         }
 
     }
+    
 
     private void GetServerInfo()
     {

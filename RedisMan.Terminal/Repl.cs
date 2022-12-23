@@ -44,10 +44,11 @@ namespace RedisMan.Terminal;
 ///     - [ ] Implement TLS? 
 ///     - [ ] Implement RESP3
 ///     - [X] Implement SUBSCRIBE
-///     - [ ] Implement XREAD
+///     - [X] Implement XREAD, BLPOP, BRPOP, and blocking operations in general
 /// </summary>
 public static partial class Repl
 {
+    private const int DEFAULT_TIMEOUT = 15;
     private static (IReadOnlyList<OverloadItem> Overloads, int ArgumentIndex) EmptyOverload() =>
         (Array.Empty<OverloadItem>(), 0);
 
@@ -138,7 +139,7 @@ public static partial class Repl
             if (command != null)
             {
                 connection.Send(command);
-                RedisValue value = connection.Receive();
+                RedisValue value = connection.Receive(DEFAULT_TIMEOUT);
                 await ValueOutput.PrintRedisValue(value);
                 connection?.Close();
                 Environment.Exit(0);
@@ -163,14 +164,15 @@ public static partial class Repl
 
                 string input = command.Text;
 
+                
                 if (connection is { IsConnected: true })
                 {
                     //do not send local commands to the server
-                    if (command is { Name: "SUBSCRIBE" })
+                    CancellationTokenSource cancelSource = new CancellationTokenSource();
+                    var cancelToken = cancelSource.Token;
+                    if (command.Name is "SUBSCRIBE")
                     {
                         connection.Send(command);
-                        CancellationTokenSource cancelSource = new CancellationTokenSource();
-                        var cancelToken = cancelSource.Token;
                         foreach (var value in connection.Subscribe(cancelToken))
                         {
                             if (Console.KeyAvailable)
@@ -178,12 +180,19 @@ public static partial class Repl
                                 if (Console.ReadKey().KeyChar == 'q')
                                 {
                                     cancelSource.Cancel();
-                                    Environment.Exit(0);
                                 }
                             }
                                 
                             await ValueOutput.PrintRedisValue(value);
                         }
+                    }
+                    else if (command.Name is "BLPOP" or "BRPOP" or "XREAD" or "BZPOPMIN" or "BZPOPMAX")
+                    {
+                        connection.Send(command);
+                        //TODO: implemen timeout for BLPOP and BRPOP
+                        var value = connection.Receive();
+                        await ValueOutput.PrintRedisValue(value);
+                        
                     }
                     else if (command.Documentation is not { Group: "application" })
                     {
@@ -196,7 +205,7 @@ public static partial class Repl
                         if (allowToExecute)
                         {
                             connection.Send(command);
-                            var value = connection.Receive();
+                            var value = connection.Receive(DEFAULT_TIMEOUT);
                             await ValueOutput.PrintRedisValue(value);
                         }
                     }
