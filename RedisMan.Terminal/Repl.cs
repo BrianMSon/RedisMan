@@ -41,8 +41,10 @@ namespace RedisMan.Terminal;
 ///     - [ ] pipe commands to shell
 ///     - [X] Test Remote git repository
 ///     - [X] Implement AUTH
-///     - [ ] Implement TLS?
+///     - [ ] Implement TLS? 
 ///     - [ ] Implement RESP3
+///     - [ ] Implement SUBSCRIBE
+///     - [ ] Implement XREAD
 /// </summary>
 public static partial class Repl
 {
