@@ -1,6 +1,7 @@
 ﻿using RedisMan.Library.Models;
 using RedisMan.Library.Values;
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Linq;
@@ -12,38 +13,11 @@ namespace RedisMan.Library.Commands;
 
 public class ParsedCommand
 {
-    string? _text;
-    byte[]? _bytes;
-    string[] _args;
-    CommandDoc _doc;
-    public string Text {
-        get => _text ?? string.Empty;
-        set {
-            _text = value;
-            _bytes = System.Text.Encoding.UTF8.GetBytes(Text);
-            string[] parts = _text.Trim().Split(' ');
-            Name = parts[0];
-            _args = parts[1..];
-        }
-    }
-    public CommandDoc? Documentation {
-        get => _doc;
-        set
-        {
-            _doc = value;
-            if (!string.IsNullOrEmpty(_text))
-            {
-                if (_doc != null)
-                {
-                    string argsPart = _text.Substring(_doc.Command.Length);
-                    _args = argsPart.Trim().Split(' ');
-                } 
-            }
-        } 
-    }
+    public string Text { get; set; }
+    public CommandDoc? Documentation { get; set; }
     public string Name { get; set; }
-    public byte[]? CommandBytes { get => _bytes; }
-    public string[] Args { get => _args;  }
+    public byte[]? CommandBytes { get; set; }
+    public string[] Args { get; set; }
 }
 
 public class CommandParser
@@ -56,28 +30,81 @@ public class CommandParser
         _documentation = documentation;
     }
 
-
-    public ParsedCommand? Parse(string input)
+    /// <summary>
+    /// TODO: implement escape for "
+    /// </summary>
+    /// <param name="input"></param>
+    /// <param name="start"></param>
+    /// <param name="end"></param>
+    /// <returns></returns>
+    public ReadOnlySpan<char> ParseToken(ReadOnlySpan<char> input, int start, out int end)
+    {
+        int charPos = start;
+        //consume all spaces
+        while (charPos < input.Length && input[charPos] == ' ') charPos++;
+        
+        if (charPos == input.Length) {
+            end = charPos;
+            return ReadOnlySpan<char>.Empty; //nothing to parse, what do we return here?
+        }
+        char parseUntil = input[charPos] == '"' ? '"' : ' ';
+        if (parseUntil == '"') charPos++; //consume "
+        int tokenStartsAt = charPos;
+        
+        while (charPos < input.Length && input[charPos] != parseUntil)
+        {
+            charPos++;
+        }
+        int tokenEndsAt = charPos;
+        if (parseUntil == '"') charPos++; //consume ending "
+        
+        
+        
+        end = charPos;
+        return input.Slice(tokenStartsAt, tokenEndsAt - tokenStartsAt);
+    }
+    
+    public ParsedCommand Parse(ReadOnlySpan<char> input)
     {
         var parsed = new ParsedCommand();
-        parsed.Text = input;
-        //split command parts
-        string[] parts = input.Split(' ');
-        //check if the command exists
-        if (parts.Length > 0)
+        //example: FT.AGGREGATE projectsIdx  "concrete @County:{Anchorage}" GROUPBY 1 @opsplannum REDUCE COUNT 0 as results
+        int start = 0;
+        var sb = StringBuilderCache.Acquire();
+        int tokens = 0;
+        var args = new List<string>();
+        while (start < input.Length)
         {
-            string compoundCommand = parts[0] + (parts.Length > 1 ? $" {parts[1]}" : "");
+            var token = ParseToken(input, start, out start);
+            if (token != ReadOnlySpan<char>.Empty)
+            {
+                if (tokens == 0) parsed.Name = token.ToString();
+                else args.Add(token.ToString());
+                tokens++;
+                sb.Append($"${token.Length}\r\n{token.ToString()}\r\n");
+            }
+        }
+        
+        string respCommand = $"*{tokens}\r\n{StringBuilderCache.GetStringAndRelease(sb)}";
+        
+        
+        
+        parsed.CommandBytes = Encoding.UTF8.GetBytes(respCommand);
+        parsed.Text = input.ToString();
+        parsed.Args = args.ToArray();
+        
+        if (_documentation != null && !string.IsNullOrEmpty(parsed.Name))
+        {
+            string compoundCommand = parsed.Name + (parsed.Args.Length > 0 ? $" {parsed.Args[0]}" : "");
             //get the command documentation
             var command = _documentation.Docs
-                .FirstOrDefault(d => string.Equals(d.Command, parts[0], StringComparison.OrdinalIgnoreCase) ||
-                        string.Equals(d.Command, compoundCommand, StringComparison.OrdinalIgnoreCase));
+                .FirstOrDefault(d => string.Equals(d.Command, parsed.Name, StringComparison.OrdinalIgnoreCase) ||
+                                     string.Equals(d.Command, compoundCommand, StringComparison.OrdinalIgnoreCase));
             parsed.Documentation = command;
         }
-
-        //get the command bytes
-
         return parsed;
     }
+
+    
 
     public static ServerInfo ParseInfoOutput(RedisBulkString info)
     {

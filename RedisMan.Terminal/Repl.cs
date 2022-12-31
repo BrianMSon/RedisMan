@@ -30,25 +30,27 @@ namespace RedisMan.Terminal;
 ///     - [X] VIEW: implement safe VIEW command
 ///     - [X] VIEW: Implement format for output
 ///     - [X] EXPORT TEST every possible type
+///     - [ ] Send commands arguments split by "" or spaces
 ///     - [ ] VIEW AND Export: Create specific functions to write and print hashes, streams, sets, zsets, etc
 ///         - [X] Hashes
 ///         - [X] Streams
 ///         - [X] Sets
 ///         - [ ] Sorted Sets
-///     - [ ] Implement Deserialization Options
 ///     - [X] CHECK DB2 key opsviewer:tools:phlytest:PHLY18-00126 , why so many nulls
 ///     - [X] local command to save command output to file
-///     - [ ] pipe commands to shell
 ///     - [X] Test Remote git repository
 ///     - [X] Implement AUTH
-///     - [ ] Implement TLS? 
 ///     - [ ] Implement RESP3
+///     - [ ] Check Why it fails with FT.SEARCH 
 ///     - [X] Implement SUBSCRIBE
 ///     - [X] Implement XREAD, BLPOP, BRPOP, and blocking operations in general
+///     - [ ] Implement Deserialization Options
+///     - [ ] pipe commands to shell
+///     - [ ] Implement TLS?
 /// </summary>
 public static partial class Repl
 {
-    private const int DEFAULT_TIMEOUT = 15;
+    const int DEFAULT_TIMEOUT = 15;
     private static (IReadOnlyList<OverloadItem> Overloads, int ArgumentIndex) EmptyOverload() =>
         (Array.Empty<OverloadItem>(), 0);
 

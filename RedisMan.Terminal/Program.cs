@@ -1,4 +1,5 @@
 ﻿using System.CommandLine;
+using RedisMan.Library.Commands;
 
 namespace RedisMan.Terminal;
 
@@ -17,7 +18,6 @@ internal class Program
 {
     static int Main(string[] args)
     {
-       
         var hostOption = new Option<string?>(name: "--host", description: "host/ip address to conect to.", getDefaultValue: () => "127.0.0.1");
         hostOption.AddAlias("-h");
         var portOption = new Option<int?>(name: "--port", description: "port to connect to.", getDefaultValue: () => 6379);

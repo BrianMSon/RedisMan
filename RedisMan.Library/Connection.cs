@@ -104,7 +104,12 @@ public class Connection : IDisposable
 
     public void Send(ParsedCommand command)
     {
-        Send(command.Text);
+        SendBytes(command.CommandBytes);
+    }
+
+    public void SendBytes(in byte[] commandBytes)
+    {
+        Stream.Write(commandBytes, 0, commandBytes.Length);
     }
 
     public void Send(string command)
