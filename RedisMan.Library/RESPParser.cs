@@ -10,13 +10,12 @@ namespace RedisMan.Library;
 ///     - [X] Parse Simple Types
 ///     - [X] Parse Arrays
 ///     - [X] Make it Right
-///     - [ ] Rent and reuse char[] data
+///     - [X] Only convert to char[] on release
 ///     - [ ] Make it Fast (Span<T>)
 /// </summary>
 public class RespParser : IDisposable
 {
     const int BUFFER_SIZE = 1024;
-    char[]? data; //rent this memory
     byte[] buffer;
     private int _pos = 0;
 
@@ -26,7 +25,7 @@ public class RespParser : IDisposable
     public RespParser()
     {
         buffer = new byte[BUFFER_SIZE];
-        data = new char[BUFFER_SIZE];
+        //data = new char[BUFFER_SIZE];
     }
 
 
@@ -39,18 +38,18 @@ public class RespParser : IDisposable
     {
         if (_stream is not null) _stream.Dispose();
         //FIX data first time
-        if (data is not null) data.AsSpan().Fill('\0');
+        //if (data is not null) data.AsSpan().Fill('\0');
         buffer.AsSpan().Fill(0);
         _stream = stream;
     }
 
     private char PeekChar()
     {
-        if (_pos >= data.Length || _pos == -1)
+        if (_pos >= buffer.Length || _pos == -1)
         {
             ReadNextChunk();
         }
-        return data[_pos];
+        return Convert.ToChar(buffer[_pos]);
     }
 
     private void ReadNextChunk()
@@ -58,7 +57,6 @@ public class RespParser : IDisposable
         if (_stream.DataAvailable)
         {
             int received = _stream.Read(buffer);
-            data = Encoding.UTF8.GetChars(buffer);
             _pos = 0;
         }
         else
@@ -69,13 +67,14 @@ public class RespParser : IDisposable
 
     private char ReadChar()
     {
-        if (_pos >= data.Length || _pos == -1)
+        if (_pos >= buffer.Length || _pos == -1)
         {
             ReadNextChunk();
         }
         if (eof) return '\0';
-        return data[_pos++];
+        return Convert.ToChar(buffer[_pos++]);
     }
+    
 
     public string ParseString()
     {
@@ -183,9 +182,9 @@ public class RespParser : IDisposable
         {
             //we receive the first
             int received = _stream.Read(buffer);
-            data = Encoding.UTF8.GetChars(buffer);
+            //data = Encoding.UTF8.GetChars(buffer);
             _pos = 0;
-            if (data.Length > 0)
+            if (buffer.Length > 0)
             {
                 return ParseValue();
             }

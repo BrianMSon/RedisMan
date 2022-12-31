@@ -50,9 +50,11 @@ public class CommandParser
         char parseUntil = input[charPos] == '"' ? '"' : ' ';
         if (parseUntil == '"') charPos++; //consume "
         int tokenStartsAt = charPos;
-        
+
         while (charPos < input.Length && input[charPos] != parseUntil)
         {
+            if (input[charPos] == '\\' && charPos + 1 < input.Length)
+                charPos++;
             charPos++;
         }
         int tokenEndsAt = charPos;
