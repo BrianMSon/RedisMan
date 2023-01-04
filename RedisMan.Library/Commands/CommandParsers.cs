@@ -8,6 +8,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using RedisMan.Library.Serialization;
 
 namespace RedisMan.Library.Commands;
 
@@ -18,6 +19,7 @@ public class ParsedCommand
     public string Name { get; set; }
     public byte[]? CommandBytes { get; set; }
     public string[] Args { get; set; }
+    public string Modifier { get; set; }
 }
 
 public class CommandParser
@@ -66,9 +68,29 @@ public class CommandParser
         return input.Slice(tokenStartsAt, tokenEndsAt - tokenStartsAt);
     }
     
-    public ParsedCommand Parse(ReadOnlySpan<char> input)
+    public ParsedCommand Parse(ReadOnlySpan<char> original)
     {
         var parsed = new ParsedCommand();
+        ISerializer serializer = null;
+        bool shouldSerialize = false;
+        int modifierIndex = original.IndexOf("#:", StringComparison.Ordinal);
+        
+        if (modifierIndex != -1)
+        {
+            parsed.Modifier = original.Slice(modifierIndex+2, original.Length - modifierIndex - 2).ToString().Trim();
+            if (!string.IsNullOrEmpty(parsed.Modifier))
+            {
+                serializer = ISerializer.GetSerializer(parsed.Modifier);
+                shouldSerialize = true;
+                
+            }
+        }
+        if (modifierIndex == -1) modifierIndex = original.Length;
+        var input = original.Slice(0, modifierIndex); //GET value#:gzip
+        
+        if (!string.IsNullOrEmpty(parsed.Modifier)) serializer = ISerializer.GetSerializer(parsed.Modifier);
+        
+        
         //example: FT.AGGREGATE projectsIdx  "concrete @County:{Anchorage}" GROUPBY 1 @opsplannum REDUCE COUNT 0 as results
         int start = 0;
         var sb = StringBuilderCache.Acquire();
@@ -79,10 +101,23 @@ public class CommandParser
             var token = ParseToken(input, start, out start);
             if (token != ReadOnlySpan<char>.Empty)
             {
-                if (tokens == 0) parsed.Name = token.ToString();
-                else args.Add(token.ToString());
+                string strToken = token.ToString();
+                if (tokens == 0) parsed.Name = strToken;
+                else args.Add(strToken);
+                if (shouldSerialize)
+                {
+                    //SERIALIZE SET
+                    if (tokens == 2 && parsed.Name == "SET")
+                    {
+                        var bytes = Encoding.ASCII.GetBytes(strToken);
+                        var encoded = serializer.Serialize(ref bytes);
+                        var encodedString = Encoding.ASCII.GetString(encoded);
+                        sb.Append($"${encodedString.Length}\r\n{encodedString}\r\n");
+                    } else sb.Append($"${strToken.Length}\r\n{strToken}\r\n");
+                }
+                else sb.Append($"${strToken.Length}\r\n{strToken}\r\n");
+                
                 tokens++;
-                sb.Append($"${token.Length}\r\n{token.ToString()}\r\n");
             }
         }
         

@@ -6,6 +6,7 @@ using PrettyPrompt.Highlighting;
 using PrettyPrompt.Consoles;
 using PrettyPrompt.Completion;
 using System.Text;
+using RedisMan.Library.Serialization;
 using static RedisMan.Terminal.PrintHelpers;
 
 namespace RedisMan.Terminal;
@@ -30,7 +31,7 @@ namespace RedisMan.Terminal;
 ///     - [X] VIEW: implement safe VIEW command
 ///     - [X] VIEW: Implement format for output
 ///     - [X] EXPORT TEST every possible type
-///     - [ ] Send commands arguments split by "" or spaces
+///     - [X] Send commands arguments split by "" or spaces
 ///     - [ ] VIEW AND Export: Create specific functions to write and print hashes, streams, sets, zsets, etc
 ///         - [X] Hashes
 ///         - [X] Streams
@@ -41,10 +42,12 @@ namespace RedisMan.Terminal;
 ///     - [X] Test Remote git repository
 ///     - [X] Implement AUTH
 ///     - [ ] Implement RESP3
-///     - [ ] Check Why it fails with FT.SEARCH 
+///     - [X] Check Why it fails with FT.SEARCH 
 ///     - [X] Implement SUBSCRIBE
 ///     - [X] Implement XREAD, BLPOP, BRPOP, and blocking operations in general
-///     - [ ] Implement Deserialization Options
+///     - [X] Implement Deserialization Options
+///     - [ ] GZIP deserialization crashes, dont close app on crash, then figure out why it fails
+///     - [ ] universal GET HSET command that allows using ISerializer
 ///     - [ ] pipe commands to shell
 ///     - [ ] Implement TLS?
 /// </summary>
@@ -140,9 +143,10 @@ public static partial class Repl
             var command = commandParser.Parse(commands);
             if (command != null)
             {
+                ISerializer serializer = ISerializer.GetSerializer(command.Modifier);
                 connection.Send(command);
                 RedisValue value = connection.Receive(DEFAULT_TIMEOUT);
-                await ValueOutput.PrintRedisValue(value);
+                await ValueOutput.PrintRedisValue(value, serializer: serializer);
                 connection?.Close();
                 Environment.Exit(0);
             }
@@ -158,15 +162,14 @@ public static partial class Repl
             if (response.IsSuccess && !string.IsNullOrWhiteSpace(response.Text))
             {
                 var command = commandParser.Parse(response.Text);
+                ISerializer serializer = ISerializer.GetSerializer(command.Modifier);
                 if (command == null)
                 {
                     Console.WriteLine($"Error Parsing {Underline(response.Text)}");
                     continue;
                 }
 
-                string input = command.Text;
-
-                
+               
                 if (connection is { IsConnected: true })
                 {
                     //do not send local commands to the server
@@ -185,15 +188,14 @@ public static partial class Repl
                                 }
                             }
                                 
-                            await ValueOutput.PrintRedisValue(value);
+                            await ValueOutput.PrintRedisValue(value, serializer: serializer);
                         }
                     }
                     else if (command.Name is "BLPOP" or "BRPOP" or "XREAD" or "BZPOPMIN" or "BZPOPMAX")
                     {
                         connection.Send(command);
-                        //TODO: implemen timeout for BLPOP and BRPOP
                         var value = connection.Receive();
-                        await ValueOutput.PrintRedisValue(value);
+                        await ValueOutput.PrintRedisValue(value, serializer: serializer);
                         
                     }
                     else if (command.Documentation is not { Group: "application" })
@@ -208,7 +210,7 @@ public static partial class Repl
                         {
                             connection.Send(command);
                             var value = connection.Receive(DEFAULT_TIMEOUT);
-                            await ValueOutput.PrintRedisValue(value);
+                            await ValueOutput.PrintRedisValue(value, serializer: serializer);
                         }
                     }
                 }
@@ -291,7 +293,7 @@ public static partial class Repl
                             var (type, value, enumerable) = connection.GetKeyValue(command);
                             if (value != null)
                             {
-                                await ValueOutput.PrintRedisValue(value, type: type);
+                                await ValueOutput.PrintRedisValue(value, type: type, serializer: serializer);
                             }
 
                             if (enumerable != null)
