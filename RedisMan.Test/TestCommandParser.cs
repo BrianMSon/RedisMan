@@ -75,4 +75,25 @@ public class TestCommandParser
         Assert.Equal(commandB64.Modifier, "base64");
         
     }
+    
+    
+    [Fact]
+    public void TestPiping()
+    {
+        var parser = new CommandParser(null);
+        var commandMod1 = parser.Parse("GET VALUE TEST | sort.exe");
+        Assert.Equal(commandMod1.Name, "GET");
+        Assert.Equal(commandMod1.Args.Length, 2);
+        Assert.Equal(commandMod1.Args[0], "VALUE");
+        Assert.Equal(commandMod1.Pipe, "sort.exe");
+        
+        var command2 = parser.Parse("GET VALUE TEST | complex.exe dosomething");
+        Assert.Equal(command2.Name, "GET");
+        Assert.Equal(command2.Args.Length, 2);
+        Assert.Equal(command2.Args[0], "VALUE");
+        Assert.Equal(command2.Pipe, "complex.exe dosomething");
+        
+
+        
+    }
 }

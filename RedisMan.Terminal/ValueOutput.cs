@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Diagnostics;
+using System.Text;
 using PrettyPrompt.Consoles;
 using PrettyPrompt.Highlighting;
 using RedisMan.Library;
@@ -290,6 +291,68 @@ public static class ValueOutput
             }
 
             await output.WriteAsync(outputText);
+        }
+    }
+
+    public static void PipeRedisValue(ParsedCommand command, RedisValue value)
+    {
+        void WriteRawValue(StreamWriter stream, RedisValue value)
+        {
+            if (value is RedisArray array)
+            {
+                foreach (var element in array.Values)
+                    WriteRawValue(stream, element);
+            }
+            else
+            {
+                stream.WriteLine(value.Value);
+            }
+        }
+        var pipeValues = command.Pipe.Split(' ');
+        if (pipeValues.Length > 0)
+        {
+            var startInfo = new ProcessStartInfo(pipeValues[0])
+            {
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                WindowStyle = ProcessWindowStyle.Hidden
+            };
+
+            //TODO: parse arguments with quotes
+            if (pipeValues.Length > 1)
+            {
+                for (int i = 1; i < pipeValues.Length; i++)
+                {
+                    startInfo.ArgumentList.Add(pipeValues[i]);
+                }
+            }
+                
+            using var pipeProcess = new Process();
+            pipeProcess.StartInfo = startInfo;
+            pipeProcess.Start();
+
+            var stream = pipeProcess.StandardInput;
+
+            WriteRawValue(stream, value);
+            
+            stream.Close();
+ 
+            while (pipeProcess.StandardOutput.Peek() > -1)
+            {
+                Console.WriteLine(pipeProcess.StandardOutput.ReadLine());
+            }
+
+            /*while (process.StandardError.Peek() > -1)
+            {
+                output.Add(process.StandardError.ReadLine());
+            }
+            Console.WriteLine(pipeProcess.StandardOutput.ReadToEnd());*/
+            
+            
+            pipeProcess.WaitForExit();
+            pipeProcess.Close();
         }
     }
 }

@@ -9,7 +9,7 @@ namespace RedisMan.Library.Values;
 
 public interface RedisValue
 {
-    public static RedisValue Null = new RedisNull();
+    public static readonly RedisValue Null = new RedisNull();
     public ValueType Type { get; }
     public string? Value { get; set; }
     public static ValueType GetValueType(char firstByte)
@@ -42,29 +42,29 @@ public interface RedisValue
 public class RedisNull : RedisValue
 {
     public string? Value {
-        get { return "Null"; }
+        get => "Null";
         set { } 
     }
-    public ValueType Type { get { return ValueType.Null; }  }
+    public ValueType Type => ValueType.Null;
 }
 
 public class RedisString : RedisValue
 {
-    public ValueType Type { get { return ValueType.String; } }
+    public ValueType Type => ValueType.String;
     public string? Value { get; set; } = "";
 }
 
 
 public class RedisBulkString : RedisValue
 {
-    public ValueType Type { get { return ValueType.BulkString; } }
+    public ValueType Type => ValueType.BulkString;
     public int Length { get; set; }
     public string? Value { get; set; } = "";
 }
 
 public class RedisError : RedisValue
 {
-    public ValueType Type { get { return ValueType.Error; } }
+    public ValueType Type => ValueType.Error;
     public string? Value { get; set; } = "";
 }
 
@@ -74,7 +74,7 @@ public class RedisInteger : RedisValue
     private string _value = "0";
     private int _intValue;
     public string? Value { 
-        get { return _value; }
+        get => _value;
         set { 
             _value = value;  
             if (!int.TryParse(_value, out _intValue))
@@ -99,12 +99,12 @@ public class RedisArray : RedisValue
         Values.Add(value);
     }
 
-    public ValueType Type { get { return ValueType.Array; } }
+    public ValueType Type => ValueType.Array;
     public int Length { get; set; }
     public List<RedisValue> Values { get; set; }
 
     public string Value { 
-        get { return $"{Length}"; }  
+        get => $"{Length}";  
         set { }  
     }
 }

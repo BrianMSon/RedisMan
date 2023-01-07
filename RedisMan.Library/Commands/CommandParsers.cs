@@ -20,6 +20,7 @@ public class ParsedCommand
     public byte[]? CommandBytes { get; set; }
     public string[] Args { get; set; }
     public string Modifier { get; set; }
+    public string Pipe { get; set; }
 }
 
 public class CommandParser
@@ -72,8 +73,10 @@ public class CommandParser
     {
         var parsed = new ParsedCommand();
         ISerializer serializer = null;
-        bool shouldSerialize = false;
+        bool shouldSerialize = false, shouldPipe = false;
         int modifierIndex = original.IndexOf("#:", StringComparison.Ordinal);
+        
+        
         
         if (modifierIndex != -1)
         {
@@ -86,7 +89,24 @@ public class CommandParser
             }
         }
         if (modifierIndex == -1) modifierIndex = original.Length;
-        var input = original.Slice(0, modifierIndex); //GET value#:gzip
+        
+        
+        int pipeIndex = original.IndexOf("|", StringComparison.Ordinal);
+        if (pipeIndex != -1)
+        {
+            parsed.Pipe = original.Slice(pipeIndex+1, original.Length - pipeIndex - 1).ToString().Trim();
+            if (!string.IsNullOrEmpty(parsed.Pipe))
+            {
+                shouldPipe = true;
+            }
+        }
+        if (pipeIndex == -1) pipeIndex = original.Length;
+
+        var input = shouldSerialize ? original.Slice(0, modifierIndex) :
+            shouldPipe ? original.Slice(0, pipeIndex) :
+            original;
+        
+        //var input = original.Slice(0, modifierIndex); //GET value#:gzip
         
         if (!string.IsNullOrEmpty(parsed.Modifier)) serializer = ISerializer.GetSerializer(parsed.Modifier);
         

@@ -1,4 +1,5 @@
-﻿using PrettyPrompt;
+﻿using System.IO.Pipes;
+using PrettyPrompt;
 using RedisMan.Library.Commands;
 using RedisMan.Library.Values;
 using RedisMan.Library;
@@ -46,9 +47,9 @@ namespace RedisMan.Terminal;
 ///     - [X] Implement SUBSCRIBE
 ///     - [X] Implement XREAD, BLPOP, BRPOP, and blocking operations in general
 ///     - [X] Implement Deserialization Options
-///     - [ ] GZIP deserialization crashes, dont close app on crash, then figure out why it fails
+///     - [X] GZIP deserialization crashes, dont close app on crash, then figure out why it fails
 ///     - [ ] universal GET HSET command that allows using ISerializer
-///     - [ ] pipe commands to shell
+///     - [X] pipe commands to shell
 ///     - [ ] Implement TLS?
 /// </summary>
 public static partial class Repl
@@ -173,7 +174,7 @@ public static partial class Repl
                 if (connection is { IsConnected: true })
                 {
                     //do not send local commands to the server
-                    CancellationTokenSource cancelSource = new CancellationTokenSource();
+                    var cancelSource = new CancellationTokenSource();
                     var cancelToken = cancelSource.Token;
                     if (command.Name is "SUBSCRIBE")
                     {
@@ -188,14 +189,16 @@ public static partial class Repl
                                 }
                             }
                                 
-                            await ValueOutput.PrintRedisValue(value, serializer: serializer);
+                            if (!string.IsNullOrEmpty(command.Pipe)) ValueOutput.PipeRedisValue(command, value);
+                            else await ValueOutput.PrintRedisValue(value, serializer: serializer);
                         }
                     }
                     else if (command.Name is "BLPOP" or "BRPOP" or "XREAD" or "BZPOPMIN" or "BZPOPMAX")
                     {
                         connection.Send(command);
                         var value = connection.Receive();
-                        await ValueOutput.PrintRedisValue(value, serializer: serializer);
+                        if (!string.IsNullOrEmpty(command.Pipe)) ValueOutput.PipeRedisValue(command, value);
+                        else await ValueOutput.PrintRedisValue(value, serializer: serializer);
                         
                     }
                     else if (command.Documentation is not { Group: "application" })
@@ -210,7 +213,8 @@ public static partial class Repl
                         {
                             connection.Send(command);
                             var value = connection.Receive(DEFAULT_TIMEOUT);
-                            await ValueOutput.PrintRedisValue(value, serializer: serializer);
+                            if (!string.IsNullOrEmpty(command.Pipe)) ValueOutput.PipeRedisValue(command, value);
+                            else await ValueOutput.PrintRedisValue(value, serializer: serializer);
                         }
                     }
                 }
