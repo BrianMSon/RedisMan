@@ -8,7 +8,9 @@ Terminal client for Redis with the following features:
 - Universal  command to open keys based on type: `VIEW set-key`.
 - Export  key value: `EXPORT HGETALL hash-key`
 - Deserializer modifier for commands `HGETALL hash-key #:snappy`
+- Pipe commands to shell `LRANGE list-key 0 100 | sort.exe`
 
+![Demo](https://github.com/cosmez/RedisMan/blob/main/.img/demo.gif)
 
 ```text
 Usage:
