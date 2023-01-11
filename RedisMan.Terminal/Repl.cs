@@ -51,6 +51,8 @@ namespace RedisMan.Terminal;
 ///     - [ ] universal GET HSET command that allows using ISerializer
 ///     - [X] pipe commands to shell
 ///     - [ ] Implement TLS?
+///     - [ ] Readme and documentation
+///     - [ ] Bugfixes
 /// </summary>
 public static partial class Repl
 {
