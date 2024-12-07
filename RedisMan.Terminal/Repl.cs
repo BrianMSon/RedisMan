@@ -206,9 +206,15 @@ public static partial class Repl
                     else if (command.Documentation is not { Group: "application" })
                     {
                         var allowToExecute = true;
-                        if (documentation.IsCommandDangerous(command.Name))
+                        //if (documentation.IsCommandDangerous(command.Name))
+                        //{
+                        //    allowToExecute = AskForDangerousExecution(command);
+                        //}
+
+                        if (command.Name == "QUIT")
                         {
-                            allowToExecute = AskForDangerousExecution(command);
+                            connection?.Close();
+                            Environment.Exit(0);
                         }
 
                         if (allowToExecute)
