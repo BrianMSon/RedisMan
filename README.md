@@ -14,7 +14,7 @@ Terminal client for Redis with the following features:
 
 ```text
 Usage:
-  RedisMan.Terminal [options]
+  RedisMan [options]
 
 Options:
   -h, --host <host>        host/ip address to conect to. [default: 127.0.0.1]
