@@ -6,10 +6,10 @@ using RedisMan.Library;
 using RedisMan.Library.Commands;
 using RedisMan.Library.Serialization;
 using RedisMan.Library.Values;
-using static RedisMan.Terminal.PrintHelpers;
+using static RedisMan.PrintHelpers;
 using ValueType = RedisMan.Library.Values.ValueType;
 
-namespace RedisMan.Terminal;
+namespace RedisMan;
 
 public static class PrintHelpers
 {

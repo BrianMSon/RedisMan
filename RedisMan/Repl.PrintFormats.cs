@@ -3,9 +3,9 @@ using PrettyPrompt.Consoles;
 using PrettyPrompt.Highlighting;
 using RedisMan.Library;
 using RedisMan.Library.Commands;
-using static RedisMan.Terminal.PrintHelpers;
+using static RedisMan.PrintHelpers;
 
-namespace RedisMan.Terminal;
+namespace RedisMan;
 public static partial class Repl
 {
     private static void PrintError(Exception ex)

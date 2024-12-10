@@ -8,9 +8,9 @@ using PrettyPrompt.Consoles;
 using PrettyPrompt.Completion;
 using System.Text;
 using RedisMan.Library.Serialization;
-using static RedisMan.Terminal.PrintHelpers;
+using static RedisMan.PrintHelpers;
 
-namespace RedisMan.Terminal;
+namespace RedisMan;
 
 /// <summary>
 /// TODO:

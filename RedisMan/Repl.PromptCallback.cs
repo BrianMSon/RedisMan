@@ -6,7 +6,7 @@ using RedisMan.Library.Commands;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 
-namespace RedisMan.Terminal;
+namespace RedisMan;
 public static partial class Repl
 {
     [SuppressMessage("ReSharper", "HeapView.ObjectAllocation.Evident")]

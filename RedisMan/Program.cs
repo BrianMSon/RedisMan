@@ -1,7 +1,7 @@
 ﻿using System.CommandLine;
 using RedisMan.Library.Commands;
 
-namespace RedisMan.Terminal;
+namespace RedisMan;
 
 /// <summary>
 /// TODO:
