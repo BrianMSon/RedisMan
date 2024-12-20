@@ -8,7 +8,7 @@ public interface ISerializer
 
     public static ISerializer GetSerializer(string name) => name switch 
     {
-        "snappy" => new SnappySerializer(),
+        //"snappy" => new SnappySerializer(),
         "gzip" => new GZipSerializer(),
         "base64" => new Base64Serializer(),
         _ => null

@@ -1,50 +1,77 @@
-﻿using System.CommandLine;
+﻿using System;
 using RedisMan.Library.Commands;
 
 namespace RedisMan;
 
 /// <summary>
 /// TODO:
-///     - [X] Implement System.CommandLine
+///     - [ ] Implement custom argument parser
 ///     - [X] args[] parser, for connection and command to execute
 ///     - [-] Repl.cs
 ///     - [-] CommandBuilder
 ///     - [ ] Connection.cs
 ///     - [X] RESPParser.cs
 ///     - [ ] Gui.cs Mode
-///     - [X] Fix "Trim unused code"  for Reflection
+///     - [X] Fix "Trim unused code" for Reflection
 /// </summary>
 internal class Program
 {
     static int Main(string[] args)
     {
-        var hostOption = new Option<string?>(name: "--host", description: "host/ip address to conect to.", getDefaultValue: () => "127.0.0.1");
-        hostOption.AddAlias("-h");
-        var portOption = new Option<int?>(name: "--port", description: "port to connect to.", getDefaultValue: () => 6379);
-        portOption.AddAlias("-p");
-        var commandOption = new Option<string?>("--command", description: "Command to Execute");
-        commandOption.AddAlias("-c");
-        var usernameOption = new Option<string?>(name: "--username", description: "username to authenticate.", getDefaultValue: () => null);
-        portOption.AddAlias("-u");
-        var passwordOption = new Option<string?>(name: "--password", description: "password to authenticate.", getDefaultValue: () => null);
-       
+        string host = "127.0.0.1";
+        int port = 6379;
+        string? command = null;
+        string? username = null;
+        string? password = null;
+        bool isGuiMode = false;
 
-        var guiCommand = new Command("gui", description: "Terminal GUI")
+        for (int i = 0; i < args.Length; i++)
         {
-            hostOption, portOption, usernameOption, passwordOption
-        };
+            switch (args[i])
+            {
+                case "--host":
+                case "-h":
+                    if (i + 1 < args.Length) host = args[++i];
+                    else Console.WriteLine("Missing value for --host");
+                    break;
+                case "--port":
+                case "-p":
+                    if (i + 1 < args.Length && int.TryParse(args[++i], out int parsedPort))
+                        port = parsedPort;
+                    else Console.WriteLine("Invalid or missing value for --port");
+                    break;
+                case "--command":
+                case "-c":
+                    if (i + 1 < args.Length) command = args[++i];
+                    else Console.WriteLine("Missing value for --command");
+                    break;
+                case "--username":
+                case "-u":
+                    if (i + 1 < args.Length) username = args[++i];
+                    else Console.WriteLine("Missing value for --username");
+                    break;
+                case "--password":
+                    if (i + 1 < args.Length) password = args[++i];
+                    else Console.WriteLine("Missing value for --password");
+                    break;
+                case "gui":
+                    isGuiMode = true;
+                    break;
+                default:
+                    Console.WriteLine($"Unknown argument: {args[i]}");
+                    break;
+            }
+        }
 
-
-        var rootCmd = new RootCommand()
+        if (isGuiMode)
         {
-            hostOption, portOption, commandOption, usernameOption, passwordOption
-        };
-        rootCmd.AddCommand(guiCommand);
-
-        rootCmd.SetHandler(Repl.Run, hostOption, portOption, commandOption, usernameOption, passwordOption);
-        guiCommand.SetHandler(Gui.Run, hostOption, portOption);
-
-        return rootCmd.Invoke(args);
+            Gui.Run(host, port);
+            return 0;
+        }
+        else
+        {
+            _ = Repl.Run(host, port, command, username, password);
+            return 0;
+        }
     }
 }
-
