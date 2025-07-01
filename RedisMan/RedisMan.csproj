@@ -2,13 +2,31 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <ProduceReferenceAssembly>True</ProduceReferenceAssembly>
   </PropertyGroup>
 
-  <ItemGroup>
+	<!-- LINUX 전용 정의 추가 -->
+	<PropertyGroup Condition="'$(RuntimeIdentifier)' == 'linux-x64'">
+		<DefineConstants>$(DefineConstants);LINUX</DefineConstants>
+	</PropertyGroup>
+	<ItemGroup>
+		<Compile Remove="publish\**" />
+		<EmbeddedResource Remove="publish\**" />
+		<None Remove="publish\**" />
+	</ItemGroup>
+
+	<!-- WINDOWS 전용 정의 추가 -->
+	<PropertyGroup Condition="'$(RuntimeIdentifier)' != 'linux-x64'">
+		<DefineConstants>$(DefineConstants);WINDOWS</DefineConstants>
+	</PropertyGroup>
+	<ItemGroup Condition="'$(RuntimeIdentifier)' != 'linux-x64'">
+		<FrameworkReference Include="Microsoft.WindowsDesktop.App.WindowsForms" />
+	</ItemGroup>
+
+	<ItemGroup>
     <Content Include="..\tools\documentation\simple_commands.json" Link="simple_commands.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -16,6 +34,7 @@
 
   <ItemGroup>
     <PackageReference Include="PrettyPrompt" Version="4.1.1" />
+    <PackageReference Include="InputSimulatorCore" Version="1.0.5" />
   </ItemGroup>
 
   <ItemGroup>

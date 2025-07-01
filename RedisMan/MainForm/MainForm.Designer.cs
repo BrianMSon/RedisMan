@@ -1,0 +1,104 @@
+﻿#if WINDOWS
+using System.Windows.Forms;
+using System.Drawing;
+
+namespace WinTestForm
+{
+    partial class MainForm
+    {
+        /// <summary>
+        ///  Required designer variable.
+        /// </summary>
+        private System.ComponentModel.IContainer components = null;
+
+        /// <summary>
+        ///  Clean up any resources being used.
+        /// </summary>
+        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && (components != null))
+            {
+                components.Dispose();
+            }
+            base.Dispose(disposing);
+        }
+
+        #region Windows Form Designer generated code
+
+        /// <summary>
+        ///  Required method for Designer support - do not modify
+        ///  the contents of this method with the code editor.
+        /// </summary>
+        private void InitializeComponent()
+        {
+            components = new System.ComponentModel.Container();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
+            timerFirstPositionMove = new System.Windows.Forms.Timer(components);
+            buttonKeysAll = new Button();
+            buttonBringConsoleWindow = new Button();
+            buttonAuth = new Button();
+            SuspendLayout();
+            // 
+            // timerFirstPositionMove
+            // 
+            timerFirstPositionMove.Enabled = true;
+            timerFirstPositionMove.Interval = 500;
+            timerFirstPositionMove.Tick += timerFirstPositionMove_Tick;
+            // 
+            // buttonKeysAll
+            // 
+            buttonKeysAll.Location = new Point(12, 41);
+            buttonKeysAll.Name = "buttonKeysAll";
+            buttonKeysAll.Size = new Size(54, 23);
+            buttonKeysAll.TabIndex = 2;
+            buttonKeysAll.Text = "keys *";
+            buttonKeysAll.UseVisualStyleBackColor = true;
+            buttonKeysAll.Click += buttonKeysAll_Click;
+            // 
+            // buttonBringConsoleWindow
+            // 
+            buttonBringConsoleWindow.BackColor = Color.Chocolate;
+            buttonBringConsoleWindow.Location = new Point(278, 1);
+            buttonBringConsoleWindow.Name = "buttonBringConsoleWindow";
+            buttonBringConsoleWindow.Size = new Size(75, 23);
+            buttonBringConsoleWindow.TabIndex = 16;
+            buttonBringConsoleWindow.Text = "CONSOLE";
+            buttonBringConsoleWindow.UseVisualStyleBackColor = false;
+            buttonBringConsoleWindow.Click += buttonBringConsoleWindow_Click;
+            // 
+            // buttonAuth
+            // 
+            buttonAuth.Location = new Point(12, 12);
+            buttonAuth.Name = "buttonAuth";
+            buttonAuth.Size = new Size(54, 23);
+            buttonAuth.TabIndex = 17;
+            buttonAuth.Text = "Auth";
+            buttonAuth.UseVisualStyleBackColor = true;
+            buttonAuth.Click += buttonAuth_Click;
+            // 
+            // MainForm
+            // 
+            AutoScaleDimensions = new SizeF(7F, 15F);
+            AutoScaleMode = AutoScaleMode.Font;
+            ClientSize = new Size(720, 705);
+            Controls.Add(buttonAuth);
+            Controls.Add(buttonBringConsoleWindow);
+            Controls.Add(buttonKeysAll);
+            Icon = (Icon)resources.GetObject("$this.Icon");
+            Name = "MainForm";
+            Text = "RedisForm";
+            Load += MainForm_Load;
+            ResizeEnd += MainForm_ResizeEnd;
+            ResumeLayout(false);
+        }
+
+        #endregion
+        private TextBox textBoxAuthId;
+        private System.Windows.Forms.Timer timerFirstPositionMove;
+        private Button buttonKeysAll;
+        private Button buttonBringConsoleWindow;
+        private Button buttonAuth;
+    }
+}
+#endif // WINDOWS
