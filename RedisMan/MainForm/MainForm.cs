@@ -133,17 +133,28 @@ namespace WinTestForm
             buttonBringConsoleWindow_Click(null!, null!);
         }
 
+        private void buttonAuth_Click(object sender, EventArgs e)
+        {
+            string password = "idoladmin9876";
+            sendFastTextInputToConsole($"AUTH {password}");
+        }
+
         private void buttonKeysAll_Click(object sender, EventArgs e)
         {
             //sendTextInputToConsole($"KEYS *");
             sendFastTextInputToConsole($"KEYS *");
         }
 
-        private void buttonAuth_Click(object sender, EventArgs e)
+        private void comboBoxSelectDB_SelectedIndexChanged(object sender, EventArgs e)
         {
-            string password = "idoladmin9876";
-            sendFastTextInputToConsole($"AUTH {password}");
+            ComboBox comboBox = (ComboBox)sender;
+            if (comboBox.Text == "")
+            {
+                comboBox.Text = "0"; // 기본값으로 0 설정
+            }
+            sendFastTextInputToConsole($"select {comboBox.Text}");
         }
+
 
         ///////////////////////////////////////////////
     }

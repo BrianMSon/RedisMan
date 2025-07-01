@@ -38,6 +38,7 @@ namespace WinTestForm
             buttonKeysAll = new Button();
             buttonBringConsoleWindow = new Button();
             buttonAuth = new Button();
+            comboBoxSelectDB = new ComboBox();
             SuspendLayout();
             // 
             // timerFirstPositionMove
@@ -77,11 +78,22 @@ namespace WinTestForm
             buttonAuth.UseVisualStyleBackColor = true;
             buttonAuth.Click += buttonAuth_Click;
             // 
+            // comboBoxSelectDB
+            // 
+            comboBoxSelectDB.FormattingEnabled = true;
+            comboBoxSelectDB.Items.AddRange(new object[] { "0" });
+            comboBoxSelectDB.Location = new Point(72, 13);
+            comboBoxSelectDB.Name = "comboBoxSelectDB";
+            comboBoxSelectDB.Size = new Size(53, 23);
+            comboBoxSelectDB.TabIndex = 18;
+            comboBoxSelectDB.SelectedIndexChanged += comboBoxSelectDB_SelectedIndexChanged;
+            // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(720, 705);
+            Controls.Add(comboBoxSelectDB);
             Controls.Add(buttonAuth);
             Controls.Add(buttonBringConsoleWindow);
             Controls.Add(buttonKeysAll);
@@ -99,6 +111,7 @@ namespace WinTestForm
         private Button buttonKeysAll;
         private Button buttonBringConsoleWindow;
         private Button buttonAuth;
+        private ComboBox comboBoxSelectDB;
     }
 }
 #endif // WINDOWS
