@@ -3,14 +3,17 @@ using System.Drawing;
 using System.Security.Policy;
 using System.Text.Json.Nodes;
 using System.Windows.Forms;
-using WindowsInput.Native;
 using WindowsInput;
+using WindowsInput.Native;
 using static RedisMan.Program;
 
 namespace WinTestForm
 {
     public partial class MainForm : Form
     {
+        private string _currentDB = "0";
+        private bool _ignoreSelectDBEvent = false;
+
         public MainForm()
         {
             InitializeComponent();
@@ -18,12 +21,11 @@ namespace WinTestForm
 
         private void MainForm_Load(object sender, EventArgs e)
         {
-            //comboBoxRoomAddress.SelectedIndex = 0;
         }
 
         private void timerFirstPositionMove_Tick(object sender, EventArgs e)
         {
-            string consoleTitle = $"RedisMan";
+            string consoleTitle = CONSOLE_TITLE;
             IntPtr consoleHandle = FindWindow(null!, consoleTitle);
 
             // 폼 위치를 콘솔 오른쪽에 위치시킴
@@ -43,7 +45,7 @@ namespace WinTestForm
         private void setFocusToConsole()
         {
             // 콘솔 창으로 포커스 이동
-            string consoleTitle = $"RedisMan";
+            string consoleTitle = CONSOLE_TITLE;
             IntPtr consoleHandle = FindWindow(null!, consoleTitle);
             if (consoleHandle != IntPtr.Zero)
             {
@@ -54,7 +56,7 @@ namespace WinTestForm
         private void sendTextInputToConsole(string text)
         {
             // 콘솔 창에 문자열 키보드 입력
-            string consoleTitle = $"RedisMan";
+            string consoleTitle = CONSOLE_TITLE;
             IntPtr consoleHandle = FindWindow(null!, consoleTitle);
             if (consoleHandle != IntPtr.Zero)
             {
@@ -71,7 +73,7 @@ namespace WinTestForm
 
         public void sendFastTextInputToConsole(string text)
         {
-            string consoleTitle = $"RedisMan";
+            string consoleTitle = CONSOLE_TITLE;
             IntPtr consoleHandle = FindWindow(null!, consoleTitle);
             if (consoleHandle != IntPtr.Zero)
             {
@@ -88,7 +90,7 @@ namespace WinTestForm
         private void buttonBringConsoleWindow_Click(object sender, EventArgs e)
         {
             // 콘솔창 가져오기
-            string consoleTitle = $"RedisMan";
+            string consoleTitle = CONSOLE_TITLE;
             IntPtr consoleHandle = FindWindow(null!, consoleTitle);
 
             // 콘솔 창 위치를 폼 위치의 왼쪽에 위치시키도록
@@ -145,15 +147,51 @@ namespace WinTestForm
             sendFastTextInputToConsole($"KEYS *");
         }
 
+        private void buttonClientInfo_Click(object sender, EventArgs e)
+        {
+            sendFastTextInputToConsole($"client info");
+        }
+
         private void comboBoxSelectDB_SelectedIndexChanged(object sender, EventArgs e)
         {
+            if (_ignoreSelectDBEvent == true)
+            {
+                _ignoreSelectDBEvent = false;
+                return;
+            }
+
             ComboBox comboBox = (ComboBox)sender;
             if (comboBox.Text == "")
             {
-                comboBox.Text = "0"; // 기본값으로 0 설정
+                return;
             }
+            _currentDB = comboBox.Text;
             sendFastTextInputToConsole($"select {comboBox.Text}");
         }
+
+        private void comboBoxSelectDB_KeyDown(object sender, KeyEventArgs e)
+        {
+            // 엔터키를 눌렀을 때
+            if (e.KeyCode == Keys.Enter)
+            {
+                ComboBox comboBox = (ComboBox)sender;
+                if (comboBox.Text == "")
+                {
+                    return;
+                }
+                _currentDB = comboBox.Text;
+                sendFastTextInputToConsole($"select {comboBox.Text}");
+                e.SuppressKeyPress = true; // 엔터 키 입력을 방지
+            }
+        }
+
+        private void comboBoxSelectDB_Leave(object sender, EventArgs e)
+        {
+            ComboBox comboBox = (ComboBox)sender;
+            _ignoreSelectDBEvent = true;
+            comboBox.Text = _currentDB;
+        }
+
 
 
         ///////////////////////////////////////////////

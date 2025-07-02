@@ -53,8 +53,6 @@ public static class ValueOutput
             {
                 break;
             }
-
-            
         }
     }
     
@@ -82,7 +80,6 @@ public static class ValueOutput
             {
                 return;
             }
-            
         }
     }
     
@@ -112,8 +109,6 @@ public static class ValueOutput
             {
                 return;
             }
-            
-
         }
     }    
 
@@ -128,7 +123,12 @@ public static class ValueOutput
                 var deserialized = serializer.Deserialize(ref bytes);
                 return Encoding.ASCII.GetString(deserialized);
             }
-            else return value;
+            else
+            {
+                // \n을 \r\n으로 변환
+                value = value.Replace("\n", "\r\n");
+                return value;
+            }
         }
         
         if (value is RedisArray array)
@@ -179,7 +179,6 @@ public static class ValueOutput
                         outputText = $"{padding}\"{GetDeserialized(value.Value)}\"";
                         consoleFormat = new ConsoleFormat(Foreground: AnsiColor.BrightBlue);
                     }
-
                     break;
                 case Library.Values.ValueType.Integer:
                     outputText = $"{padding}{GetDeserialized(value.Value)}";
@@ -192,11 +191,15 @@ public static class ValueOutput
             }
 
             if (color)
+            {
                 Console.Write(AnsiEscapeCodes.Reset + AnsiEscapeCodes.ToAnsiEscapeSequenceSlow(consoleFormat) +
-                                  outputText + AnsiEscapeCodes.Reset);
+                              outputText + AnsiEscapeCodes.Reset);
+            }
             else
+            {
                 Console.Write(outputText);
-            
+            }
+
             if (newline) Console.WriteLine();
         }
     }

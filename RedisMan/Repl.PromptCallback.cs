@@ -68,8 +68,5 @@ public static partial class Repl
 
             return Task.FromResult<IReadOnlyList<CompletionItem>>(Array.Empty<CompletionItem>());
         }
-
-
-
     }
 }

@@ -10,7 +10,6 @@ public static partial class Repl
 {
     private static void PrintError(Exception ex)
     {
-
         var format = new ConsoleFormat(Bold: true, Foreground: AnsiColor.BrightRed);
         Console.Error.Write(AnsiEscapeCodes.Reset);
         Console.Error.Write(AnsiEscapeCodes.ToAnsiEscapeSequenceSlow(format) + "Error: " + AnsiEscapeCodes.Reset);
@@ -23,13 +22,13 @@ public static partial class Repl
         if (serverInfo != null && (serverInfo.KeySpace?.Any() ?? false))
         {
             Console.WriteLine($"Connected to Redis {Bold(serverInfo.RedisVersion.ToString())} {Bold(serverInfo.RedisMode)}");
+            Console.WriteLine($"OS: {serverInfo.Os}");
             Console.WriteLine($"Memory: {Underline(serverInfo.UsedMemoryHuman)} / {Underline(serverInfo.TotalSystemMemoryHuman)}");
             Console.WriteLine($"Available Databases:");
             foreach (var ks in serverInfo.KeySpace)
             {
                 Console.WriteLine($" {WithColor(ks.DBName, AnsiColor.White)} ({WithColor(ks.Keys.ToString(), AnsiColor.White)} Total Keys)");
             }
-
         }
     }
 
@@ -46,7 +45,6 @@ public static partial class Repl
 
     private static OverloadItem GetOverloadCommandDocumentation(CommandDoc commandDoc, string text, int caret)
     {
-
         var fmArguments = new FormattedStringBuilder();
         fmArguments.Append(commandDoc.Command, new FormatSpan(0, commandDoc.Command.Length, AnsiColor.BrightYellow));
         fmArguments.Append(' ');
@@ -60,21 +58,16 @@ public static partial class Repl
 
     private static void PrintHelp()
     {
-        Console.WriteLine(
-$@"
-This is a Test Help Message
-
-
-Header
-===============
-Text with {Underline("Format")} at the end.
-
-Another Header
-=================
-Another Text
-"
-        );
-
-
+        Console.WriteLine($"This is a Test\r\nHelp Message");
+        Console.WriteLine($"");
+        Console.WriteLine($"");
+        Console.WriteLine($"Header");
+        Console.WriteLine($"===============");
+        Console.WriteLine($"");
+        Console.WriteLine($"Text with {Underline("Format")} at the end.");
+        Console.WriteLine($"");
+        Console.WriteLine($"Another Header");
+        Console.WriteLine($"=================");
+        Console.WriteLine($"Another Text");
     }
 }

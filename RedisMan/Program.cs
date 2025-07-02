@@ -21,6 +21,8 @@ using static System.Windows.Forms.DataFormats;
 /// </summary>
 public class Program
 {
+    public static string CONSOLE_TITLE = $"RedisMan";
+
     static int Main(string[] args)
     {
         startWinForm();
@@ -66,6 +68,8 @@ public class Program
             }
         }
 
+        password = "idoladmin9876";
+
         _ = Repl.Run(host, port, command, username, password);
         return 0;
     }
@@ -82,7 +86,7 @@ public class Program
         // 콘솔 타이틀을 고정시켜 핸들 찾기 용이하게 함
         // 타이틀 뒤에 PID 추가
         //
-        Console.Title = $"RedisMan";
+        Console.Title = CONSOLE_TITLE;
 
         Console.WriteLine("WINDOWS 환경에서 실행 중입니다.");
 

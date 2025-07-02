@@ -116,7 +116,6 @@ public static partial class Repl
             prompt: "Not Connected>",
             keyBindings: keyBindings);
 
-
         await using var prompt = new Prompt(
             callbacks: new RedisPromptCallBack(documentation),
             configuration: promptConfiguration);
@@ -221,8 +220,40 @@ public static partial class Repl
                         {
                             connection.Send(command);
                             var value = connection.Receive(DEFAULT_TIMEOUT);
-                            if (!string.IsNullOrEmpty(command.Pipe)) ValueOutput.PipeRedisValue(command, value);
-                            else await ValueOutput.PrintRedisValue(value, serializer: serializer);
+                            if (!string.IsNullOrEmpty(command.Pipe))
+                            {
+                                ValueOutput.PipeRedisValue(command, value);
+                            }
+                            else
+                            {
+                                await ValueOutput.PrintRedisValue(value, serializer: serializer);
+
+                                //---------------------------------------------------------
+                                // client info 결과에서 db값 추출
+                                if (command.Text.ToLower() == "client info")
+                                {
+                                    // value에서 db= 형태의 문자열 추출 출력
+                                    var dbMatch = value.Value.Split(' ').FirstOrDefault(s => s.StartsWith("db="));
+                                    if (dbMatch != null)
+                                    {
+                                        var dbNumber = dbMatch.Split('=')[1];
+                                        if (int.TryParse(dbNumber, out var dbIndex))
+                                        {
+                                            // 현재 연결된 데이터베이스 인덱스 출력
+                                            Console.WriteLine($"Current DB Index: {dbIndex}");
+                                        }
+                                        else
+                                        {
+                                            Console.WriteLine($"Failed to parse DB index from: {dbMatch}");
+                                        }
+                                    }
+                                    else
+                                    {
+                                        Console.WriteLine("No DB index found in client info response.");
+                                    }
+                                }
+                                //---------------------------------------------------------
+                            }
                         }
                     }
                 }

@@ -39,6 +39,7 @@ namespace WinTestForm
             buttonBringConsoleWindow = new Button();
             buttonAuth = new Button();
             comboBoxSelectDB = new ComboBox();
+            buttonClientInfo = new Button();
             SuspendLayout();
             // 
             // timerFirstPositionMove
@@ -81,18 +82,32 @@ namespace WinTestForm
             // comboBoxSelectDB
             // 
             comboBoxSelectDB.FormattingEnabled = true;
-            comboBoxSelectDB.Items.AddRange(new object[] { "0" });
+            comboBoxSelectDB.Items.AddRange(new object[] { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15" });
             comboBoxSelectDB.Location = new Point(72, 13);
             comboBoxSelectDB.Name = "comboBoxSelectDB";
             comboBoxSelectDB.Size = new Size(53, 23);
             comboBoxSelectDB.TabIndex = 18;
+            comboBoxSelectDB.Text = "0";
             comboBoxSelectDB.SelectedIndexChanged += comboBoxSelectDB_SelectedIndexChanged;
+            comboBoxSelectDB.KeyDown += comboBoxSelectDB_KeyDown;
+            comboBoxSelectDB.Leave += comboBoxSelectDB_Leave;
+            // 
+            // buttonClientInfo
+            // 
+            buttonClientInfo.Location = new Point(131, 13);
+            buttonClientInfo.Name = "buttonClientInfo";
+            buttonClientInfo.Size = new Size(78, 23);
+            buttonClientInfo.TabIndex = 19;
+            buttonClientInfo.Text = "Client Info";
+            buttonClientInfo.UseVisualStyleBackColor = true;
+            buttonClientInfo.Click += buttonClientInfo_Click;
             // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(720, 705);
+            Controls.Add(buttonClientInfo);
             Controls.Add(comboBoxSelectDB);
             Controls.Add(buttonAuth);
             Controls.Add(buttonBringConsoleWindow);
@@ -112,6 +127,7 @@ namespace WinTestForm
         private Button buttonBringConsoleWindow;
         private Button buttonAuth;
         private ComboBox comboBoxSelectDB;
+        private Button buttonClientInfo;
     }
 }
 #endif // WINDOWS
