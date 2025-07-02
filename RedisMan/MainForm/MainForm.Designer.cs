@@ -35,11 +35,12 @@ namespace WinTestForm
             components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             timerFirstPositionMove = new System.Windows.Forms.Timer(components);
-            buttonKeysAll = new Button();
+            buttonKeys = new Button();
             buttonBringConsoleWindow = new Button();
             buttonAuth = new Button();
             comboBoxSelectDB = new ComboBox();
             buttonClientInfo = new Button();
+            textBoxKeyword = new TextBox();
             SuspendLayout();
             // 
             // timerFirstPositionMove
@@ -48,20 +49,20 @@ namespace WinTestForm
             timerFirstPositionMove.Interval = 500;
             timerFirstPositionMove.Tick += timerFirstPositionMove_Tick;
             // 
-            // buttonKeysAll
+            // buttonKeys
             // 
-            buttonKeysAll.Location = new Point(12, 41);
-            buttonKeysAll.Name = "buttonKeysAll";
-            buttonKeysAll.Size = new Size(54, 23);
-            buttonKeysAll.TabIndex = 2;
-            buttonKeysAll.Text = "keys *";
-            buttonKeysAll.UseVisualStyleBackColor = true;
-            buttonKeysAll.Click += buttonKeysAll_Click;
+            buttonKeys.Location = new Point(12, 41);
+            buttonKeys.Name = "buttonKeys";
+            buttonKeys.Size = new Size(54, 25);
+            buttonKeys.TabIndex = 2;
+            buttonKeys.Text = "keys";
+            buttonKeys.UseVisualStyleBackColor = true;
+            buttonKeys.Click += buttonKeys_Click;
             // 
             // buttonBringConsoleWindow
             // 
             buttonBringConsoleWindow.BackColor = Color.Chocolate;
-            buttonBringConsoleWindow.Location = new Point(278, 1);
+            buttonBringConsoleWindow.Location = new Point(638, 7);
             buttonBringConsoleWindow.Name = "buttonBringConsoleWindow";
             buttonBringConsoleWindow.Size = new Size(75, 23);
             buttonBringConsoleWindow.TabIndex = 16;
@@ -102,32 +103,44 @@ namespace WinTestForm
             buttonClientInfo.UseVisualStyleBackColor = true;
             buttonClientInfo.Click += buttonClientInfo_Click;
             // 
+            // textBoxKeyword
+            // 
+            textBoxKeyword.Location = new Point(72, 42);
+            textBoxKeyword.Name = "textBoxKeyword";
+            textBoxKeyword.Size = new Size(100, 23);
+            textBoxKeyword.TabIndex = 20;
+            textBoxKeyword.Text = "*";
+            textBoxKeyword.KeyDown += textBoxKeyword_KeyDown;
+            // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(720, 705);
+            Controls.Add(textBoxKeyword);
             Controls.Add(buttonClientInfo);
             Controls.Add(comboBoxSelectDB);
             Controls.Add(buttonAuth);
             Controls.Add(buttonBringConsoleWindow);
-            Controls.Add(buttonKeysAll);
+            Controls.Add(buttonKeys);
             Icon = (Icon)resources.GetObject("$this.Icon");
             Name = "MainForm";
             Text = "RedisForm";
             Load += MainForm_Load;
             ResizeEnd += MainForm_ResizeEnd;
             ResumeLayout(false);
+            PerformLayout();
         }
 
         #endregion
         private TextBox textBoxAuthId;
         private System.Windows.Forms.Timer timerFirstPositionMove;
-        private Button buttonKeysAll;
+        private Button buttonKeys;
         private Button buttonBringConsoleWindow;
         private Button buttonAuth;
         private ComboBox comboBoxSelectDB;
         private Button buttonClientInfo;
+        private TextBox textBoxKeyword;
     }
 }
 #endif // WINDOWS

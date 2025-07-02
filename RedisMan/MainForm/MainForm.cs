@@ -141,10 +141,11 @@ namespace WinTestForm
             sendFastTextInputToConsole($"AUTH {password}");
         }
 
-        private void buttonKeysAll_Click(object sender, EventArgs e)
+        private void buttonKeys_Click(object sender, EventArgs e)
         {
-            //sendTextInputToConsole($"KEYS *");
-            sendFastTextInputToConsole($"KEYS *");
+            string keyWord = textBoxKeyword.Text.Trim();
+            //sendTextInputToConsole($"KEYS {keyWord}");
+            sendFastTextInputToConsole($"KEYS {keyWord}");
         }
 
         private void buttonClientInfo_Click(object sender, EventArgs e)
@@ -154,11 +155,12 @@ namespace WinTestForm
 
         private void comboBoxSelectDB_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (_ignoreSelectDBEvent == true)
-            {
-                _ignoreSelectDBEvent = false;
-                return;
-            }
+            //if (_ignoreSelectDBEvent == true)
+            //{
+            //    _ignoreSelectDBEvent = false;
+            //    Console.WriteLine($"_ignoreSelectDBEvent == true : return");
+            //    //return;
+            //}
 
             ComboBox comboBox = (ComboBox)sender;
             if (comboBox.Text == "")
@@ -188,8 +190,18 @@ namespace WinTestForm
         private void comboBoxSelectDB_Leave(object sender, EventArgs e)
         {
             ComboBox comboBox = (ComboBox)sender;
-            _ignoreSelectDBEvent = true;
+            //_ignoreSelectDBEvent = true;
+            //Console.WriteLine($"_ignoreSelectDBEvent = true;");
             comboBox.Text = _currentDB;
+        }
+
+        private void textBoxKeyword_KeyDown(object sender, KeyEventArgs e)
+        {
+            // enter 키를 눌렀을 때
+            if (e.KeyCode == Keys.Enter)
+            {
+                buttonKeys_Click(sender, e);
+            }
         }
 
 
