@@ -12,7 +12,6 @@ namespace WinTestForm
     public partial class MainForm : Form
     {
         private string _currentDB = "0";
-        private bool _ignoreSelectDBEvent = false;
 
         public MainForm()
         {
@@ -155,13 +154,6 @@ namespace WinTestForm
 
         private void comboBoxSelectDB_SelectedIndexChanged(object sender, EventArgs e)
         {
-            //if (_ignoreSelectDBEvent == true)
-            //{
-            //    _ignoreSelectDBEvent = false;
-            //    Console.WriteLine($"_ignoreSelectDBEvent == true : return");
-            //    //return;
-            //}
-
             ComboBox comboBox = (ComboBox)sender;
             if (comboBox.Text == "")
             {
@@ -190,8 +182,6 @@ namespace WinTestForm
         private void comboBoxSelectDB_Leave(object sender, EventArgs e)
         {
             ComboBox comboBox = (ComboBox)sender;
-            //_ignoreSelectDBEvent = true;
-            //Console.WriteLine($"_ignoreSelectDBEvent = true;");
             comboBox.Text = _currentDB;
         }
 
