@@ -55,12 +55,17 @@ public class Connection : IDisposable
         TcpClient.Close();
     }
 
-    public static Connection? Connect(string host, int port, string password = "", string username = "")
+    public static Connection? Connect(string address, string password = "", string username = "")
     {
+        // address에서 ip:port를 추출
+        string[] parts = address.Split(':');
+        string sHost = parts[0];
+        string sPort = (parts.Length > 1) ? parts[1] : "6379"; // 기본 포트는 6379
+
         var connection = new Connection()
         {
-            Host = host,
-            Port = port
+            Host = sHost,
+            Port = Convert.ToInt32(sPort)
         };
 
         connection.TryConnecting();

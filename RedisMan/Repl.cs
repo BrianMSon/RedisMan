@@ -1,13 +1,14 @@
-﻿using System.IO.Pipes;
-using PrettyPrompt;
-using RedisMan.Library.Commands;
-using RedisMan.Library.Values;
-using RedisMan.Library;
-using PrettyPrompt.Highlighting;
-using PrettyPrompt.Consoles;
+﻿using PrettyPrompt;
 using PrettyPrompt.Completion;
-using System.Text;
+using PrettyPrompt.Consoles;
+using PrettyPrompt.Highlighting;
+using RedisMan.Library;
+using RedisMan.Library.Commands;
 using RedisMan.Library.Serialization;
+using RedisMan.Library.Values;
+using System.IO.Pipes;
+using System.Net;
+using System.Text;
 using static RedisMan.PrintHelpers;
 
 namespace RedisMan;
@@ -99,6 +100,7 @@ public static partial class Repl
 
         var _ip = host ?? "127.0.0.1";
         var _port = port ?? 6379;
+        var _address = $"{_ip}:{_port}";
         Connection? connection = null;
 
         // Enable history
@@ -127,7 +129,11 @@ public static partial class Repl
         {
             try
             {
-                connection = Connection.Connect(_ip, _port, password ?? string.Empty, username ?? string.Empty);
+                //Console.WriteLine($"- address: {_address}");
+                //Console.WriteLine($"- password: {password}");
+                //Console.WriteLine($"- username: {username}");
+
+                connection = Connection.Connect(_address, password ?? string.Empty, username ?? string.Empty);
                 PrintConnectedInfo(connection);
                 UpdatePrompt(connection, promptConfiguration);
             }
@@ -280,13 +286,31 @@ public static partial class Repl
                         continue;
                     }
 
+                    if (doc.Command == "DISCONNECT" || doc.Command == "CLOSE")
+                    {
+                        if (connection != null)
+                        {
+                            connection.Close();
+                            connection = null;
+                            UpdatePrompt(connection, promptConfiguration);
+                            Console.WriteLine("Disconnected.");
+                        }
+                        continue;
+                    }
+
                     if (doc.Command == "CONNECT")
                     {
                         if (command.Args.Length > 1)
                         {
+                            string[] parts = command.Args[0].Split(':');
+                            string sPort = "6379"; // Default port
+                            if (parts.Length == 2)
+                            {
+                                sPort = parts[1];
+                            }
+
                             var newHost = command.Args[0];
-                            var sPort = command.Args[1];
-                            Console.WriteLine($"Connecting to {Underline(newHost)}:{Underline(sPort)}");
+                            Console.WriteLine($"Connecting to {Underline(command.Args[0])}");
                             if (int.TryParse(sPort, out var intPort))
                             {
                                 try
@@ -294,15 +318,15 @@ public static partial class Repl
                                     string conPassword = string.Empty;
                                     string conUsername = string.Empty;
                                     //Legaccy Authentication
-                                    if (command.Args.Length == 3) conPassword = command.Args[2];
+                                    if (command.Args.Length == 2) conPassword = command.Args[1];
                                     //New ACL Authentication
-                                    if (command.Args.Length == 4)
+                                    if (command.Args.Length == 3)
                                     {
-                                        conUsername = command.Args[2];
-                                        conPassword = command.Args[3];
+                                        conUsername = command.Args[1];
+                                        conPassword = command.Args[2];
                                     }
 
-                                    connection = Connection.Connect(newHost, intPort, conPassword, conUsername);
+                                    connection = Connection.Connect(newHost, conPassword, conUsername);
                                     PrintConnectedInfo(connection);
                                 }
                                 catch (Exception ex)

@@ -19,7 +19,7 @@ public static partial class Repl
     private static void PrintConnectedInfo(Connection? connection)
     {
         var serverInfo = connection.ServerInfo;
-        if (serverInfo != null && (serverInfo.KeySpace?.Any() ?? false))
+        if (serverInfo != null /*&& (serverInfo.KeySpace?.Any() ?? false)*/)
         {
             Console.WriteLine($"Connected to Redis {Bold(serverInfo.RedisVersion.ToString())} {Bold(serverInfo.RedisMode)}");
             Console.WriteLine($"OS: {serverInfo.Os}");

@@ -40,17 +40,37 @@ public class Documentation
             Command = "EXIT",
             Group = "application",
             Since = "",
-            Summary = "Closess the application"
+            Summary = "Exit the application"
 
         });
 
         Docs.Add(new CommandDoc()
         {
-            Arguments = "ip [port] <[password] | [username] [password]>",
+            Arguments = "ip[:port] <[password] | [username] [password]>",
             Command = "CONNECT",
             Group = "application",
             Since = "",
             Summary = "Connects to another server"
+
+        });
+
+        Docs.Add(new CommandDoc()
+        {
+            Arguments = "",
+            Command = "CLOSE",
+            Group = "application",
+            Since = "",
+            Summary = "Close(Disconnect) connection"
+
+        });
+
+        Docs.Add(new CommandDoc()
+        {
+            Arguments = "",
+            Command = "DISCONNECT",
+            Group = "application",
+            Since = "",
+            Summary = "Close(Disconnect) connection"
 
         });
 

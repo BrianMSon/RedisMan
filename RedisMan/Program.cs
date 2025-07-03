@@ -25,8 +25,6 @@ public class Program
 
     static int Main(string[] args)
     {
-        startWinForm();
-
         string host = "127.0.0.1";
         int port = 6379;
         string? command = null;
@@ -37,41 +35,67 @@ public class Program
         {
             switch (args[i])
             {
-                case "--host":
-                case "-h":
-                    if (i + 1 < args.Length) host = args[++i];
-                    else Console.WriteLine("Missing value for --host");
-                    break;
-                case "--port":
-                case "-p":
-                    if (i + 1 < args.Length && int.TryParse(args[++i], out int parsedPort))
-                        port = parsedPort;
-                    else Console.WriteLine("Invalid or missing value for --port");
-                    break;
-                case "--command":
-                case "-c":
-                    if (i + 1 < args.Length) command = args[++i];
-                    else Console.WriteLine("Missing value for --command");
-                    break;
-                case "--username":
-                case "-u":
-                    if (i + 1 < args.Length) username = args[++i];
-                    else Console.WriteLine("Missing value for --username");
-                    break;
-                case "--password":
-                    if (i + 1 < args.Length) password = args[++i];
-                    else Console.WriteLine("Missing value for --password");
-                    break;
-                default:
-                    Console.WriteLine($"Unknown argument: {args[i]}");
-                    break;
+            case "-h":
+            case "--host":
+                if (i + 1 < args.Length) host = args[++i];
+                else Console.WriteLine("Missing value for --host or -h");
+                break;
+            case "-p":
+            case "--port":
+                if (i + 1 < args.Length && int.TryParse(args[++i], out int parsedPort))
+                    port = parsedPort;
+                else Console.WriteLine("Invalid or missing value for --port or -p");
+                break;
+            case "-c":
+            case "--command":
+                if (i + 1 < args.Length) command = args[++i];
+                else Console.WriteLine("Missing value for --command or -c");
+                break;
+            case "-u":
+            case "--username":
+                if (i + 1 < args.Length) username = args[++i];
+                else Console.WriteLine("Missing value for --username or -u");
+                break;
+            case "-P":
+            case "--password":
+                if (i + 1 < args.Length) password = args[++i];
+                else Console.WriteLine("Missing value for --password or -P");
+                break;
+            case "-H":
+            case "--help":
+                printHelpMessage();
+                return 1;
+            default:
+                Console.WriteLine($"Unknown argument: {args[i]}");
+                printHelpMessage();
+                return 1;
             }
         }
 
-        password = "idoladmin9876";
+        startWinForm();
+
+        //password = "redisDev9876"; //test password
 
         _ = Repl.Run(host, port, command, username, password);
         return 0;
+    }
+
+    private static void printHelpMessage()
+    {
+        Console.WriteLine("Usage: RedisMan [options]");
+        Console.WriteLine("Options:");
+        Console.WriteLine("  -h <hostname>       Hostname of the Redis server (default:127.0.0.1)");
+        Console.WriteLine("  --host <hostname>");
+        Console.WriteLine("  -p <port>           Port of the Redis server (default: 6379)");
+        Console.WriteLine("  --port <port>");
+        Console.WriteLine("  -c <cmd>            Command to execute on the Redis server");
+        Console.WriteLine("  --command <cmd>");
+        Console.WriteLine("  -u <user>           Username for authentication (optional)");
+        Console.WriteLine("  --username <user>");
+        Console.WriteLine("  -P <pass>           Password for authentication (optional)");
+        Console.WriteLine("  --password <pass>");
+        Console.WriteLine("  -H                  Show this help message");
+        Console.WriteLine("  --help");
     }
 
     private static void startWinForm()
