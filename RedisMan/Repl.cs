@@ -93,13 +93,14 @@ public static partial class Repl
     }
 
 
-    public static async Task Run(string? host, int? port, string? commands, string? username, string? password)
+    public static async Task Run(string? host, int? port, int? dbnum, string? commands, string? username, string? password)
     {
         var documentation = new Documentation();
         documentation.Generate();
 
         var _ip = host ?? "127.0.0.1";
         var _port = port ?? 6379;
+        var _dbnum = dbnum ?? 0;
         var _address = $"{_ip}:{_port}";
         Connection? connection = null;
 
@@ -133,7 +134,7 @@ public static partial class Repl
                 //Console.WriteLine($"- password: {password}");
                 //Console.WriteLine($"- username: {username}");
 
-                connection = Connection.Connect(_address, password ?? string.Empty, username ?? string.Empty);
+                connection = Connection.Connect(_address, _dbnum, password ?? string.Empty, username ?? string.Empty);
                 PrintConnectedInfo(connection);
                 UpdatePrompt(connection, promptConfiguration);
             }
@@ -167,7 +168,7 @@ public static partial class Repl
             //"{_ip}:{_port}> "
             var response = await prompt.ReadLineAsync();
             // Send message.
-            if (response.IsSuccess && !string.IsNullOrWhiteSpace(response.Text))
+            if (response.IsSuccess && string.IsNullOrWhiteSpace(response.Text) == false)
             {
                 var command = commandParser.Parse(response.Text);
                 ISerializer serializer = ISerializer.GetSerializer(command.Modifier);
@@ -176,7 +177,6 @@ public static partial class Repl
                     Console.WriteLine($"Error Parsing {Underline(response.Text)}");
                     continue;
                 }
-
                
                 if (connection is { IsConnected: true })
                 {
@@ -207,6 +207,27 @@ public static partial class Repl
                         if (!string.IsNullOrEmpty(command.Pipe)) ValueOutput.PipeRedisValue(command, value);
                         else await ValueOutput.PrintRedisValue(value, serializer: serializer);
                         
+                    }
+                    else if (command.Name is "AUTH")
+                    {
+                        connection.Send(command);
+                        RedisValue value = connection.Receive();
+                        await ValueOutput.PrintRedisValue(value, serializer: serializer);
+
+                        connection.DbNum = 0;
+                        connection.GetServerInfo();
+                        PrintConnectedInfo(connection);
+                        UpdatePrompt(connection, promptConfiguration);
+                    }
+                    else if (command.Name is "SELECT")
+                    {
+                        //Console.WriteLine($"SELECT : {command.Args[0]}");
+                        connection.Send(command);
+                        RedisValue value = connection.Receive();
+                        await ValueOutput.PrintRedisValue(value, serializer: serializer);
+
+                        connection.DbNum = Convert.ToInt32(command.Args[0]);
+                        UpdatePrompt(connection, promptConfiguration);
                     }
                     else if (command.Documentation is not { Group: "application" })
                     {
@@ -300,43 +321,49 @@ public static partial class Repl
 
                     if (doc.Command == "CONNECT")
                     {
-                        if (command.Args.Length > 1)
+                        if (command.Args.Length == 0)
                         {
-                            string[] parts = command.Args[0].Split(':');
-                            string sPort = "6379"; // Default port
-                            if (parts.Length == 2)
-                            {
-                                sPort = parts[1];
-                            }
+                            // error
+                            Console.WriteLine("Usage: CONNECT ip[:port] [username] [password]");
+                            continue;
+                        }
 
-                            var newHost = command.Args[0];
-                            Console.WriteLine($"Connecting to {Underline(command.Args[0])}");
-                            if (int.TryParse(sPort, out var intPort))
-                            {
-                                try
-                                {
-                                    string conPassword = string.Empty;
-                                    string conUsername = string.Empty;
-                                    //Legaccy Authentication
-                                    if (command.Args.Length == 2) conPassword = command.Args[1];
-                                    //New ACL Authentication
-                                    if (command.Args.Length == 3)
-                                    {
-                                        conUsername = command.Args[1];
-                                        conPassword = command.Args[2];
-                                    }
+                        string[] parts = command.Args[0].Split(':');
+                        string sPort = "6379"; // Default port
+                        if (parts.Length == 2)
+                        {
+                            sPort = parts[1];
+                        }
 
-                                    connection = Connection.Connect(newHost, conPassword, conUsername);
-                                    PrintConnectedInfo(connection);
-                                }
-                                catch (Exception ex)
+                        var newHost = command.Args[0];
+                        Console.WriteLine($"Connecting to {Underline(command.Args[0])}");
+                        if (int.TryParse(sPort, out var intPort))
+                        {
+                            try
+                            {
+                                string conPassword = string.Empty;
+                                string conUsername = string.Empty;
+                                //Legacy Authentication
+                                if (command.Args.Length == 2) conPassword = command.Args[1];
+                                //New ACL Authentication
+                                if (command.Args.Length == 3)
                                 {
-                                    connection = null;
-                                    PrintError(ex);
+                                    conUsername = command.Args[1];
+                                    conPassword = command.Args[2];
                                 }
 
+                                const int dbNum = 0; // Default DB number
+                                connection = Connection.Connect(newHost, dbNum, conPassword, conUsername);
+                                PrintConnectedInfo(connection);
                                 UpdatePrompt(connection, promptConfiguration);
                             }
+                            catch (Exception ex)
+                            {
+                                connection = null;
+                                PrintError(ex);
+                            }
+
+                            UpdatePrompt(connection, promptConfiguration);
                         }
                     }
 
@@ -384,6 +411,16 @@ public static partial class Repl
                     }
                 }
             }
+            else
+            {
+                // Ctrl+C pressed exiting.
+                if (response.SubmitKeyInfo.Key == ConsoleKey.C && response.SubmitKeyInfo.Modifiers == ConsoleModifiers.Control)
+                {
+                    Console.WriteLine("Ctrl+C pressed.");
+                    connection?.Close();
+                    Environment.Exit(0);
+                }
+            }
         }
     }
 
@@ -420,7 +457,11 @@ public static partial class Repl
         }
         else
         {
-            var promptFormat = $"{connection.Host}:{connection.Port}> ";
+            var promptFormat = $"{connection.Host}:{connection.Port}/{connection.DbNum}> ";
+            if (connection.IsAuthenticated == null || connection.IsAuthenticated == false)
+            {
+                promptFormat = $"{connection.Host}:{connection.Port}> ";
+            }
             var promptLength = promptFormat.Length;
             prompt.Prompt = new FormattedString(promptFormat, new FormatSpan(0, promptLength - 2, AnsiColor.Red),
                 new FormatSpan(promptLength - 2, 1, AnsiColor.Yellow));

@@ -15,6 +15,7 @@ public class Connection : IDisposable
     
     public string Host { get; set; }
     public int Port { get; set; }
+    public int DbNum { get; set; } = 0;
     public int ReceiveTimeout { get; set; } = 1000;
     private TcpClient TcpClient { get; set; }
     public NetworkStream Stream { get; set; }
@@ -55,7 +56,7 @@ public class Connection : IDisposable
         TcpClient.Close();
     }
 
-    public static Connection? Connect(string address, string password = "", string username = "")
+    public static Connection? Connect(string address, int dbnum = 0, string password = "", string username = "")
     {
         // address에서 ip:port를 추출
         string[] parts = address.Split(':');
@@ -65,13 +66,13 @@ public class Connection : IDisposable
         var connection = new Connection()
         {
             Host = sHost,
-            Port = Convert.ToInt32(sPort)
+            Port = Convert.ToInt32(sPort),
+            DbNum = dbnum,
         };
 
         connection.TryConnecting();
 
-
-        ///After connecting, grab server information if available
+        //After connecting, grab server information if available
         if (connection.IsConnected)
         {
             //Legacy connection
@@ -80,7 +81,7 @@ public class Connection : IDisposable
                 connection.Send($"AUTH {password}");
                 if (connection.Receive() is RedisString value)
                 {
-                    connection.IsAuthenticated = value.Value == "OK";
+                    connection.IsAuthenticated = (value.Value == "OK");
                 }
             }
             
@@ -90,11 +91,26 @@ public class Connection : IDisposable
                 connection.Send($"AUTH {username} {password}");
                 if (connection.Receive() is RedisString value)
                 {
-                    connection.IsAuthenticated = value.Value == "OK";
+                    connection.IsAuthenticated = (value.Value == "OK");
                 }
             }
-            
-            connection.GetServerInfo();
+
+            if (connection.GetServerInfo() == false)
+            {
+                Console.WriteLine("Failed to get server info. Connection might not be fully established.");
+                return connection;
+            }
+
+            // select dbnum if available
+            if (dbnum > 0)
+            {
+                connection.Send($"SELECT {dbnum}");
+                RedisValue selectResponse = connection.Receive();
+                if (selectResponse is RedisError error)
+                {
+                    Console.WriteLine($"Error selecting database: {error.Value}");
+                }
+            }
         }
 
         return connection;
@@ -170,14 +186,34 @@ public class Connection : IDisposable
     }
     
 
-    private void GetServerInfo()
+    public bool GetServerInfo()
     {
         Send("INFO");
         RedisValue value = Receive();
-        if (value != null && value is RedisBulkString bulkString)
+        if (value == null)
+        {
+            Console.WriteLine("No response from server.");
+            return false;
+        }
+
+        if (value.Type == ValueType.Error)
+        {
+            Console.WriteLine($"Error: {value.Value}");
+            return false;
+        }
+
+        if (value is RedisBulkString bulkString)
         {
             ServerInfo = CommandParser.ParseInfoOutput(bulkString);
         }
+        else
+        {
+            Console.WriteLine($"{value.Type} : {value.Value}");
+        }
+
+        IsAuthenticated = true; //if we got here, we are authenticated
+
+        return true;
     }
 
     public IEnumerable<RedisValue> SafeKeys(string pattern)

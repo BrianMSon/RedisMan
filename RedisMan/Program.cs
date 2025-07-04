@@ -30,6 +30,7 @@ public class Program
         string? command = null;
         string? username = null;
         string? password = null;
+        int dbnum = 0;
 
         for (int i = 0; i < args.Length; i++)
         {
@@ -46,6 +47,12 @@ public class Program
                     port = parsedPort;
                 else Console.WriteLine("Invalid or missing value for --port or -p");
                 break;
+            case "-n":
+            case "--db":
+                if (i + 1 < args.Length && int.TryParse(args[++i], out int parsedDbnum))
+                    dbnum = parsedDbnum;
+                else Console.WriteLine("Invalid or missing value for --db or -n");
+                break;
             case "-c":
             case "--command":
                 if (i + 1 < args.Length) command = args[++i];
@@ -56,7 +63,7 @@ public class Program
                 if (i + 1 < args.Length) username = args[++i];
                 else Console.WriteLine("Missing value for --username or -u");
                 break;
-            case "-P":
+            case "-a":
             case "--password":
                 if (i + 1 < args.Length) password = args[++i];
                 else Console.WriteLine("Missing value for --password or -P");
@@ -75,8 +82,10 @@ public class Program
         startWinForm();
 
         //password = "redisDev9876"; //test password
+        //port = 6379; //test
+        //dbnum = 1; //test
 
-        _ = Repl.Run(host, port, command, username, password);
+        _ = Repl.Run(host, port, dbnum, command, username, password);
         return 0;
     }
 
@@ -92,9 +101,11 @@ public class Program
         Console.WriteLine("  --command <cmd>");
         Console.WriteLine("  -u <user>           Username for authentication (optional)");
         Console.WriteLine("  --username <user>");
-        Console.WriteLine("  -P <pass>           Password for authentication (optional)");
+        Console.WriteLine("  -a <pass>           password for Authentication (optional)");
         Console.WriteLine("  --password <pass>");
-        Console.WriteLine("  -H                  Show this help message");
+        Console.WriteLine("  -n <dbnum>          database Number to connect to (default: 0)");
+        Console.WriteLine("  --db <dbnum>");
+        Console.WriteLine("  -H                  show this Help message");
         Console.WriteLine("  --help");
     }
 

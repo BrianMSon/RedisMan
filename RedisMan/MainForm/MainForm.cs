@@ -136,7 +136,7 @@ namespace WinTestForm
 
         private void buttonAuth_Click(object sender, EventArgs e)
         {
-            string password = "idoladmin9876";
+            string password = "redisDev9876";
             sendFastTextInputToConsole($"AUTH {password}");
         }
 
