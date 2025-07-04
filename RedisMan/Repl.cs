@@ -337,7 +337,7 @@ public static partial class Repl
 
                         var newHost = command.Args[0];
                         Console.WriteLine($"Connecting to {Underline(command.Args[0])}");
-                        if (int.TryParse(sPort, out var intPort))
+                        if (int.TryParse(sPort, out var intPort) == true)
                         {
                             try
                             {
@@ -394,9 +394,9 @@ public static partial class Repl
                             {
                                 if (type == "stream")
                                     await ValueOutput.PrintRedisStream(enumerable, 10);
-                                else if (type == "hash") 
+                                else if (type == "hash")
                                     await ValueOutput.PrintRedisHash(enumerable, 10);
-                                else  await ValueOutput.PrintRedisValues(enumerable, 50, type: type);
+                                else await ValueOutput.PrintRedisValues(enumerable, 50, type: type);
                             }
                         }
 
