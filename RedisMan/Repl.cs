@@ -183,7 +183,7 @@ public static partial class Repl
                     //do not send local commands to the server
                     var cancelSource = new CancellationTokenSource();
                     var cancelToken = cancelSource.Token;
-                    if (command.Name is "SUBSCRIBE")
+                    if (command.Name.ToUpper() is "SUBSCRIBE")
                     {
                         connection.Send(command);
                         foreach (var value in connection.Subscribe(cancelToken))
@@ -200,7 +200,7 @@ public static partial class Repl
                             else await ValueOutput.PrintRedisValue(value, serializer: serializer);
                         }
                     }
-                    else if (command.Name is "BLPOP" or "BRPOP" or "XREAD" or "BZPOPMIN" or "BZPOPMAX")
+                    else if (command.Name.ToUpper() is "BLPOP" or "BRPOP" or "XREAD" or "BZPOPMIN" or "BZPOPMAX")
                     {
                         connection.Send(command);
                         var value = connection.Receive();
@@ -208,7 +208,7 @@ public static partial class Repl
                         else await ValueOutput.PrintRedisValue(value, serializer: serializer);
                         
                     }
-                    else if (command.Name is "AUTH")
+                    else if (command.Name.ToUpper() is "AUTH")
                     {
                         connection.Send(command);
                         RedisValue value = connection.Receive();
@@ -219,7 +219,7 @@ public static partial class Repl
                         PrintConnectedInfo(connection);
                         UpdatePrompt(connection, promptConfiguration);
                     }
-                    else if (command.Name is "SELECT")
+                    else if (command.Name.ToUpper() is "SELECT")
                     {
                         //Console.WriteLine($"SELECT : {command.Args[0]}");
                         connection.Send(command);
@@ -237,7 +237,7 @@ public static partial class Repl
                         //    allowToExecute = AskForDangerousExecution(command);
                         //}
 
-                        if (command.Name == "QUIT")
+                        if (command.Name.ToUpper() == "QUIT")
                         {
                             connection?.Close();
                             Environment.Exit(0);
@@ -295,19 +295,19 @@ public static partial class Repl
                 if (command.Documentation is { Group: "application" })
                 {
                     var doc = command.Documentation;
-                    if (doc.Command == "EXIT")
+                    if (doc.Command.ToUpper() == "EXIT")
                     {
                         connection?.Close();
                         Environment.Exit(0);
                     }
 
-                    if (doc.Command == "CLEAR")
+                    if (doc.Command.ToUpper() == "CLEAR")
                     {
                         Console.Clear();
                         continue;
                     }
 
-                    if (doc.Command == "DISCONNECT" || doc.Command == "CLOSE")
+                    if (doc.Command.ToUpper() == "DISCONNECT" || doc.Command.ToUpper() == "CLOSE")
                     {
                         if (connection != null)
                         {
@@ -319,7 +319,7 @@ public static partial class Repl
                         continue;
                     }
 
-                    if (doc.Command == "CONNECT")
+                    if (doc.Command.ToUpper() == "CONNECT")
                     {
                         if (command.Args.Length == 0)
                         {
@@ -375,14 +375,14 @@ public static partial class Repl
 
                     if (connection != null)
                     {
-                        if (command.Name == "SAFEKEYS")
+                        if (command.Name.ToUpper() == "SAFEKEYS")
                         {
                             var pattern = command.Args.Length > 0 ? command.Args[0] : "";
                             var keys = connection.SafeKeys(pattern);
                             await ValueOutput.PrintRedisValues(keys, 100);
                         }
 
-                        if (command is { Name: "VIEW", Args.Length: > 0 })
+                        if (command.Name.ToUpper() == "VIEW" && command is { Args.Length: > 0 })
                         {
                             var (type, value, enumerable) = connection.GetKeyValue(command);
                             if (value != null)
@@ -400,7 +400,7 @@ public static partial class Repl
                             }
                         }
 
-                        if (command is { Name: "EXPORT", Args.Length: > 0 })
+                        if (command.Name.ToUpper() == "EXPORT" && command is { Args.Length: > 0 })
                         {
                             string filename = command.Args[0];
                             string cmdToExport = String.Join(' ', command.Args[1..]);
@@ -432,7 +432,7 @@ public static partial class Repl
         var execute = false;
         var sb = new StringBuilder();
         sb.Append($"The command {Bold(command.Name)} is considered dangerous to execute, execute anyway?");
-        if (command.Name == "KEYS") sb.Append($" You can execute {Underline("SCAN")} or {Underline("SEARCH")}");
+        if (command.Name.ToUpper() == "KEYS") sb.Append($" You can execute {Underline("SCAN")} or {Underline("SEARCH")}");
         sb.Append($" {WithColor("(Y/N)", AnsiColor.Yellow)} ");
         sb.Append(AnsiEscapeCodes.Reset);
         Console.Write(sb.ToString());
